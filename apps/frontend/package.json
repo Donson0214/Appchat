@@ -4,7 +4,9 @@
   "description": "",
   "main": "postcss.config.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nuxt dev --host localhost --port 3001",
+    "build": "nuxt build",
+    "preview": "nuxt preview"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +23,8 @@
     "@vueuse/nuxt": "^14.2.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.20",
+    "firebase": "^12.11.0",
+    "nuxt": "^4.1.2",
     "socket.io-client": "^4.8.3",
     "vee-validate": "^4.15.1",
     "vue-sonner": "^2.0.9",
@@ -35,6 +39,7 @@
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite-plugin-mkcert": "^1.17.10"
   }
 }
