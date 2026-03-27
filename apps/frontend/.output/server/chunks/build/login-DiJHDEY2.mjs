@@ -14,6 +14,7 @@ import 'vue-bundle-renderer/runtime';
 import 'vue/server-renderer';
 import 'unhead/server';
 import 'devalue';
+import 'unhead/utils';
 import 'vue-router';
 
 const _sfc_main = /* @__PURE__ */ defineComponent({

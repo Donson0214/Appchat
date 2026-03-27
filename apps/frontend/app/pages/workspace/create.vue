@@ -30,6 +30,7 @@
 const workspaceName = ref("");
 const errorMessage = ref("");
 const submitting = ref(false);
+const { saveWorkspace } = useWorkspace();
 
 const slugify = (value: string) =>
   value
@@ -57,8 +58,8 @@ const handleCreateWorkspace = async () => {
       createdAt: new Date().toISOString(),
     };
 
-    localStorage.setItem("appchat_workspace", JSON.stringify(workspace));
-    await navigateTo("/app");
+    saveWorkspace(workspace);
+    await navigateTo(`/workspace/${workspace.slug}/channel/general`);
   } finally {
     submitting.value = false;
   }

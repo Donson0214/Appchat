@@ -1,6 +1,6 @@
-globalThis.__timing__.logStart('Load chunks/build/sign-up-B2XHZrJE');import { u as useGoogleAuth, _ as __nuxt_component_0, a as useAuthApi } from './use-google-auth-C6JVb4a-.mjs';
-import { defineComponent, ref, mergeProps, withCtx, unref, createVNode, openBlock, createBlock, createTextVNode, toDisplayString, createCommentVNode, withDirectives, isRef, vModelText, useSSRContext } from 'vue';
+globalThis.__timing__.logStart('Load chunks/build/sign-in-weYEMP9A');import { defineComponent, ref, mergeProps, withCtx, unref, createVNode, openBlock, createBlock, createTextVNode, toDisplayString, createCommentVNode, withDirectives, isRef, vModelText, useSSRContext } from 'vue';
 import { ssrRenderComponent, ssrIncludeBooleanAttr, ssrInterpolate, ssrRenderAttr } from 'vue/server-renderer';
+import { u as useGoogleAuth, a as useAuthApi, _ as _sfc_main$1, g as getPostAuthRedirectPath } from './use-google-auth-DiomOngO.mjs';
 import { n as navigateTo } from './server.mjs';
 import '../_/nitro.mjs';
 import 'node:http';
@@ -16,20 +16,20 @@ import '../routes/renderer.mjs';
 import 'vue-bundle-renderer/runtime';
 import 'unhead/server';
 import 'devalue';
+import 'unhead/utils';
 import 'vue-router';
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
-  __name: "sign-up",
+  __name: "sign-in",
   __ssrInlineRender: true,
   setup(__props) {
     const googleLoading = ref(false);
     const submitLoading = ref(false);
     const errorMessage = ref("");
-    const fullName = ref("");
     const email = ref("");
     const password = ref("");
     const { signInWithGoogle } = useGoogleAuth();
-    const { registerWithEmail } = useAuthApi();
+    const { loginWithEmail } = useAuthApi();
     const handleGoogleSignIn = async () => {
       try {
         googleLoading.value = true;
@@ -43,29 +43,27 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         googleLoading.value = false;
       }
     };
-    const handleEmailRegister = async () => {
+    const handleEmailSignIn = async () => {
       try {
         submitLoading.value = true;
         errorMessage.value = "";
-        await registerWithEmail({
-          fullName: fullName.value.trim(),
+        await loginWithEmail({
           email: email.value.trim().toLowerCase(),
           password: password.value
         });
-        await navigateTo("/workspace/create");
+        await navigateTo(getPostAuthRedirectPath());
       } catch (error) {
-        errorMessage.value = error?.data?.message ?? "Registration failed";
+        errorMessage.value = error?.data?.message ?? "Email sign-in failed";
       } finally {
         submitLoading.value = false;
       }
     };
     return (_ctx, _push, _parent, _attrs) => {
-      const _component_AuthLayout = __nuxt_component_0;
-      _push(ssrRenderComponent(_component_AuthLayout, mergeProps({
-        subtitle: "Create your account",
-        "bottom-text": "Already have an account?",
-        "bottom-link-label": "Sign in",
-        "bottom-link-to": "/sign-in"
+      _push(ssrRenderComponent(_sfc_main$1, mergeProps({
+        subtitle: "Sign in to your workspace",
+        "bottom-text": "Don't have an account?",
+        "bottom-link-label": "Sign up",
+        "bottom-link-to": "/sign-up"
       }, _attrs), {
         default: withCtx((_, _push2, _parent2, _scopeId) => {
           if (_push2) {
@@ -75,7 +73,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             } else {
               _push2(`<!---->`);
             }
-            _push2(`<div class="my-4 flex w-full items-center gap-3 text-[14px] text-slate-400"${_scopeId}><span class="h-px flex-1 bg-slate-300/60"${_scopeId}></span><span${_scopeId}>or</span><span class="h-px flex-1 bg-slate-300/60"${_scopeId}></span></div><label class="mt-1 text-[15px] font-medium leading-tight text-slate-900"${_scopeId}>Full name</label><input class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15" type="text" placeholder="Alex Morgan"${ssrRenderAttr("value", unref(fullName))}${_scopeId}><label class="mt-1 text-[15px] font-medium leading-tight text-slate-900"${_scopeId}>Email</label><input class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15" type="email" placeholder="you@company.com"${ssrRenderAttr("value", unref(email))}${_scopeId}><label class="mt-1 text-[15px] font-medium leading-tight text-slate-900"${_scopeId}>Password</label><input class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15" type="password" placeholder="••••••••"${ssrRenderAttr("value", unref(password))}${_scopeId}><button class="mt-2 h-[40px] w-full rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-[16px] font-semibold text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_16px_rgba(99,102,241,0.24)] active:translate-y-0 active:shadow-[0_3px_8px_rgba(99,102,241,0.20)]" type="button"${ssrIncludeBooleanAttr(unref(submitLoading)) ? " disabled" : ""}${_scopeId}>${ssrInterpolate(unref(submitLoading) ? "Creating..." : "Create account")}</button>`);
+            _push2(`<div class="my-4 flex w-full items-center gap-3 text-[14px] text-slate-400"${_scopeId}><span class="h-px flex-1 bg-slate-300/60"${_scopeId}></span><span${_scopeId}>or</span><span class="h-px flex-1 bg-slate-300/60"${_scopeId}></span></div><label class="mt-1 text-[15px] font-medium leading-tight text-slate-900"${_scopeId}>Email</label><input class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15" type="email" placeholder="you@company.com"${ssrRenderAttr("value", unref(email))}${_scopeId}><div class="mt-0.5 flex items-center justify-between"${_scopeId}><label class="text-[15px] font-medium leading-tight text-slate-900"${_scopeId}>Password</label><a class="text-[12px] font-medium text-indigo-600" href="#"${_scopeId}>Forgot password?</a></div><input class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15" type="password" placeholder="••••••••"${ssrRenderAttr("value", unref(password))}${_scopeId}><button class="mt-2 h-[40px] w-full rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-[16px] font-semibold text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_16px_rgba(99,102,241,0.24)] active:translate-y-0 active:shadow-[0_3px_8px_rgba(99,102,241,0.20)]" type="button"${ssrIncludeBooleanAttr(unref(submitLoading)) ? " disabled" : ""}${_scopeId}>${ssrInterpolate(unref(submitLoading) ? "Signing in..." : "Sign in")}</button>`);
           } else {
             return [
               createVNode("button", {
@@ -141,15 +139,6 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
                 createVNode("span", null, "or"),
                 createVNode("span", { class: "h-px flex-1 bg-slate-300/60" })
               ]),
-              createVNode("label", { class: "mt-1 text-[15px] font-medium leading-tight text-slate-900" }, "Full name"),
-              withDirectives(createVNode("input", {
-                class: "h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15",
-                type: "text",
-                placeholder: "Alex Morgan",
-                "onUpdate:modelValue": ($event) => isRef(fullName) ? fullName.value = $event : null
-              }, null, 8, ["onUpdate:modelValue"]), [
-                [vModelText, unref(fullName)]
-              ]),
               createVNode("label", { class: "mt-1 text-[15px] font-medium leading-tight text-slate-900" }, "Email"),
               withDirectives(createVNode("input", {
                 class: "h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15",
@@ -159,7 +148,13 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
               }, null, 8, ["onUpdate:modelValue"]), [
                 [vModelText, unref(email)]
               ]),
-              createVNode("label", { class: "mt-1 text-[15px] font-medium leading-tight text-slate-900" }, "Password"),
+              createVNode("div", { class: "mt-0.5 flex items-center justify-between" }, [
+                createVNode("label", { class: "text-[15px] font-medium leading-tight text-slate-900" }, "Password"),
+                createVNode("a", {
+                  class: "text-[12px] font-medium text-indigo-600",
+                  href: "#"
+                }, "Forgot password?")
+              ]),
               withDirectives(createVNode("input", {
                 class: "h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15",
                 type: "password",
@@ -172,8 +167,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
                 class: "mt-2 h-[40px] w-full rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-[16px] font-semibold text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_16px_rgba(99,102,241,0.24)] active:translate-y-0 active:shadow-[0_3px_8px_rgba(99,102,241,0.20)]",
                 type: "button",
                 disabled: unref(submitLoading),
-                onClick: handleEmailRegister
-              }, toDisplayString(unref(submitLoading) ? "Creating..." : "Create account"), 9, ["disabled"])
+                onClick: handleEmailSignIn
+              }, toDisplayString(unref(submitLoading) ? "Signing in..." : "Sign in"), 9, ["disabled"])
             ];
           }
         }),
@@ -185,9 +180,9 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
 const _sfc_setup = _sfc_main.setup;
 _sfc_main.setup = (props, ctx) => {
   const ssrContext = useSSRContext();
-  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/sign-up.vue");
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("pages/sign-in.vue");
   return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
 };
 
-export { _sfc_main as default };;globalThis.__timing__.logEnd('Load chunks/build/sign-up-B2XHZrJE');
-//# sourceMappingURL=sign-up-B2XHZrJE.mjs.map
+export { _sfc_main as default };;globalThis.__timing__.logEnd('Load chunks/build/sign-in-weYEMP9A');
+//# sourceMappingURL=sign-in-weYEMP9A.mjs.map

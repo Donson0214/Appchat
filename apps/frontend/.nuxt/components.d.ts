@@ -14,21 +14,6 @@ type HydrationStrategies = {
 type LazyComponent<T> = DefineComponent<HydrationStrategies, {}, {}, {}, {}, {}, {}, { hydrated: () => void }> & T
 
 
-export const AuthLayout: typeof import("../app/components/auth/AuthLayout.vue")['default']
-export const ChatContainer: typeof import("../app/components/chat/ChatContainer.vue")['default']
-export const ChatMessageAvatar: typeof import("../app/components/chat/MessageAvatar.vue")['default']
-export const ChatMessageItem: typeof import("../app/components/chat/MessageItem.vue")['default']
-export const ChatMessageList: typeof import("../app/components/chat/MessageList.vue")['default']
-export const LayoutChannelSidebar: typeof import("../app/components/layout/ChannelSidebar.vue")['default']
-export const LayoutHeader: typeof import("../app/components/layout/Header.vue")['default']
-export const LayoutRightPanel: typeof import("../app/components/layout/RightPanel.vue")['default']
-export const LayoutSidebar: typeof import("../app/components/layout/Sidebar.vue")['default']
-export const LayoutWorkspaceSidebar: typeof import("../app/components/layout/WorkspaceSidebar.vue")['default']
-export const UiAvatar: typeof import("../app/components/ui/Avatar.vue")['default']
-export const UiBadge: typeof import("../app/components/ui/Badge.vue")['default']
-export const UiButton: typeof import("../app/components/ui/Button.vue")['default']
-export const UiInput: typeof import("../app/components/ui/Input.vue")['default']
-export const UiTooltip: typeof import("../app/components/ui/Tooltip.vue")['default']
 export const NuxtWelcome: typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']
 export const NuxtLayout: typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']
 export const NuxtErrorBoundary: typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']
@@ -53,21 +38,6 @@ export const Head: typeof import("../node_modules/nuxt/dist/head/runtime/compone
 export const Html: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Html']
 export const Body: typeof import("../node_modules/nuxt/dist/head/runtime/components")['Body']
 export const NuxtIsland: typeof import("../node_modules/nuxt/dist/app/components/nuxt-island")['default']
-export const LazyAuthLayout: LazyComponent<typeof import("../app/components/auth/AuthLayout.vue")['default']>
-export const LazyChatContainer: LazyComponent<typeof import("../app/components/chat/ChatContainer.vue")['default']>
-export const LazyChatMessageAvatar: LazyComponent<typeof import("../app/components/chat/MessageAvatar.vue")['default']>
-export const LazyChatMessageItem: LazyComponent<typeof import("../app/components/chat/MessageItem.vue")['default']>
-export const LazyChatMessageList: LazyComponent<typeof import("../app/components/chat/MessageList.vue")['default']>
-export const LazyLayoutChannelSidebar: LazyComponent<typeof import("../app/components/layout/ChannelSidebar.vue")['default']>
-export const LazyLayoutHeader: LazyComponent<typeof import("../app/components/layout/Header.vue")['default']>
-export const LazyLayoutRightPanel: LazyComponent<typeof import("../app/components/layout/RightPanel.vue")['default']>
-export const LazyLayoutSidebar: LazyComponent<typeof import("../app/components/layout/Sidebar.vue")['default']>
-export const LazyLayoutWorkspaceSidebar: LazyComponent<typeof import("../app/components/layout/WorkspaceSidebar.vue")['default']>
-export const LazyUiAvatar: LazyComponent<typeof import("../app/components/ui/Avatar.vue")['default']>
-export const LazyUiBadge: LazyComponent<typeof import("../app/components/ui/Badge.vue")['default']>
-export const LazyUiButton: LazyComponent<typeof import("../app/components/ui/Button.vue")['default']>
-export const LazyUiInput: LazyComponent<typeof import("../app/components/ui/Input.vue")['default']>
-export const LazyUiTooltip: LazyComponent<typeof import("../app/components/ui/Tooltip.vue")['default']>
 export const LazyNuxtWelcome: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/welcome.vue")['default']>
 export const LazyNuxtLayout: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-layout")['default']>
 export const LazyNuxtErrorBoundary: LazyComponent<typeof import("../node_modules/nuxt/dist/app/components/nuxt-error-boundary.vue")['default']>

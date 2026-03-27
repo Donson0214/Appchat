@@ -1,4 +1,4 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};globalThis.__timing__.logStart('Load chunks/build/server');import { hasInjectionContext, getCurrentInstance, defineComponent, ref, inject, h, Suspense, Fragment, useSSRContext, createApp, provide, shallowReactive, mergeProps, onErrorCaptured, onServerPrefetch, unref, createVNode, resolveDynamicComponent, reactive, effectScope, getCurrentScope, toRef, shallowRef, isReadonly, isRef, isShallow, isReactive, toRaw } from 'vue';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};globalThis.__timing__.logStart('Load chunks/build/server');import { hasInjectionContext, inject, getCurrentInstance, defineComponent, ref, h, Suspense, Fragment, useSSRContext, createApp, provide, shallowReactive, mergeProps, onErrorCaptured, onServerPrefetch, unref, createVNode, resolveDynamicComponent, reactive, effectScope, getCurrentScope, toRef, shallowRef, isReadonly, isRef, isShallow, isReactive, toRaw } from 'vue';
 import { p as parseURL, l as encodePath, m as decodePath, n as hasProtocol, o as isScriptProtocol, k as joinURL, w as withQuery, q as sanitizeStatusCode, r as getContext, $ as $fetch, h as createError$1, v as executeAsync, x as defu } from '../_/nitro.mjs';
 import { b as baseURL } from '../routes/renderer.mjs';
 import { RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
@@ -14,6 +14,7 @@ import 'node:url';
 import 'vue-bundle-renderer/runtime';
 import 'unhead/server';
 import 'devalue';
+import 'unhead/utils';
 
 //#region src/utils.ts
 function flatHooks(configHooks, hooks = {}, parentName) {
@@ -617,12 +618,22 @@ const _routes = [
   {
     name: "workspace-create",
     path: "/workspace/create",
-    component: () => import('./create-_omQGvSx.mjs')
+    component: () => import('./create-CV94unXO.mjs')
+  },
+  {
+    name: "workspace-workspaceId-channel-channelId",
+    path: "/workspace/:workspaceId()/channel/:channelId()",
+    component: () => import('./_channelId_-D2yZ-CY1.mjs')
+  },
+  {
+    name: "admin",
+    path: "/admin",
+    component: () => import('./admin-EfC_55zm.mjs')
   },
   {
     name: "app",
     path: "/app",
-    component: () => import('./app-m58F0Zma.mjs')
+    component: () => import('./app-CMuC-llA.mjs')
   },
   {
     name: "login",
@@ -635,14 +646,19 @@ const _routes = [
     component: () => import('./register-NtFCZHCB.mjs')
   },
   {
+    name: "settings",
+    path: "/settings",
+    component: () => import('./settings-C5YXfnqW.mjs')
+  },
+  {
     name: "sign-in",
     path: "/sign-in",
-    component: () => import('./sign-in-GJVxh9wh.mjs')
+    component: () => import('./sign-in-weYEMP9A.mjs')
   },
   {
     name: "sign-up",
     path: "/sign-up",
-    component: () => import('./sign-up-B2XHZrJE.mjs')
+    component: () => import('./sign-up-saUMzmcr.mjs')
   },
   {
     name: "index",
@@ -1201,5 +1217,5 @@ let entry;
 }
 const entry_default = ((ssrContext) => entry(ssrContext));
 
-export { useNuxtApp as a, useRuntimeConfig as b, nuxtLinkDefaults as c, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useRouter as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
+export { _export_sfc as _, useRoute as a, useRouter as b, useRuntimeConfig as c, nuxtLinkDefaults as d, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useNuxtApp as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
 //# sourceMappingURL=server.mjs.map

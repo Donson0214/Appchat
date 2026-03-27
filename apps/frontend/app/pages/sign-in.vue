@@ -73,6 +73,8 @@
 </template>
 
 <script setup lang="ts">
+import AuthLayout from "../components/auth/AuthLayout.vue";
+
 const googleLoading = ref(false);
 const submitLoading = ref(false);
 const errorMessage = ref("");

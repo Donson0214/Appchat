@@ -1,0 +1,1 @@
+import{d as n,I as s,n as r}from"./CaPR9SpN.js";const _=n({__name:"app",async setup(o){let e,a;{const t=localStorage.getItem("appchat_workspace");if(!t)[e,a]=s(()=>r("/workspace/create",{replace:!0})),await e,a();else{const p=JSON.parse(t)?.slug||"acme";[e,a]=s(()=>r(`/workspace/${p}/channel/general`,{replace:!0})),await e,a()}}return()=>{}}});export{_ as default};

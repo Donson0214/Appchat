@@ -1,34 +1,254 @@
 ﻿<template>
-  <div class="flex-1 overflow-y-auto px-3 py-3">
-    <nav class="space-y-2 text-[17px] text-slate-700">
-      <a class="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-slate-100" href="#"><span>⌂</span>Home</a>
-      <a class="flex items-center justify-between rounded-md px-2 py-2 hover:bg-slate-100" href="#"><span class="flex items-center gap-3"><span>📥</span>Inbox</span><Badge>18</Badge></a>
+  <div class="flex-1 overflow-y-auto px-2.5 py-3">
+    <nav class="space-y-1 text-[16px] text-[#4b5565]">
+      <button class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors duration-150 hover:bg-slate-200/70">
+        <svg viewBox="0 0 20 20" class="h-4 w-4 fill-current text-slate-500">
+          <path d="m10 3 6 6v7.2a.8.8 0 0 1-.8.8h-2.9a.8.8 0 0 1-.8-.8V13h-3v3.2a.8.8 0 0 1-.8.8H4.8a.8.8 0 0 1-.8-.8V9l6-6Zm0 2.2L6 9v6h1.9V11.8c0-.4.3-.8.8-.8h3c.4 0 .8.4.8.8V15H14V9l-4-3.8Z" />
+        </svg>
+        <span>Home</span>
+      </button>
+
+      <button class="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors duration-150 hover:bg-slate-200/70">
+        <span class="flex items-center gap-2.5">
+          <svg viewBox="0 0 20 20" class="h-4 w-4 fill-current text-indigo-500">
+            <path d="M3.2 4.5h13.6c.4 0 .7.3.7.7v9.6a.7.7 0 0 1-.7.7H3.2a.7.7 0 0 1-.7-.7V5.2c0-.4.3-.7.7-.7Zm1.3 1.4v1.9H2.5v4.4h2v1.9h11v-1.9h2V7.8h-2V5.9h-11Z" />
+          </svg>
+          <span>Inbox</span>
+        </span>
+        <Badge>18</Badge>
+      </button>
     </nav>
 
-    <div class="mt-4">
-      <p class="mb-2 flex items-center gap-2 px-2 text-[12px] font-bold tracking-wide text-slate-500"><span>⌄</span>CHANNELS</p>
-      <div class="space-y-1 text-[18px] text-slate-600">
-        <a class="flex items-center gap-3 rounded-md bg-indigo-50 px-3 py-2 text-indigo-600" href="#"><span>#</span>general</a>
-        <a class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-100" href="#"><span>#</span>design</a>
-        <a class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-slate-100" href="#"><span class="flex items-center gap-3"><span>#</span>engineering</span><Badge>12</Badge></a>
-        <a class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-100" href="#"><span>#</span>random</a>
-        <a class="flex items-center justify-between rounded-md px-3 py-2 hover:bg-slate-100" href="#"><span class="flex items-center gap-3"><span>#</span>announceme...</span><Badge>1</Badge></a>
-        <a class="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-slate-100" href="#"><span>🔒</span>leadership</a>
-        <a class="flex items-center gap-3 rounded-md px-3 py-2 text-slate-400 hover:bg-slate-100" href="#"><span>＋</span>Add channel</a>
+    <div class="mt-5">
+      <p class="mb-1.5 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-[#64748b]">
+        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current">
+          <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z" />
+        </svg>
+        <span>CHANNELS</span>
+      </p>
+
+      <div class="space-y-0.5 text-[17px] text-[#475569]">
+        <button
+          v-for="channel in channels"
+          :key="channel.slug"
+          type="button"
+          class="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors duration-150"
+          :class="channel.slug === activeChannel ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200/70'"
+          @click="goChannel(channel.slug)"
+        >
+          <span class="flex min-w-0 items-center gap-2.5">
+            <svg v-if="channel.private" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-slate-400">
+              <path d="M10 1.8a4 4 0 0 0-4 4v2H5a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9.8a2 2 0 0 0-2-2h-1v-2a4 4 0 0 0-4-4Zm2.3 6V5.8a2.3 2.3 0 0 0-4.6 0v2h4.6Z" />
+            </svg>
+            <span v-else class="text-[30px] leading-none">#</span>
+            <span class="truncate" :class="channel.private ? '' : ''">{{ channel.name }}</span>
+          </span>
+          <Badge v-if="channel.badge">{{ channel.badge }}</Badge>
+        </button>
+
+        <button
+          type="button"
+          class="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-slate-400 transition-colors duration-150 hover:bg-slate-200/70"
+          @click="isCreateChannelOpen = true"
+        >
+          <span class="text-[22px] leading-none">+</span>
+          <span>Add channel</span>
+        </button>
       </div>
     </div>
 
-    <div class="mt-4">
-      <p class="mb-2 flex items-center gap-2 px-2 text-[12px] font-bold tracking-wide text-slate-500"><span>⌄</span>DIRECT MESSAGES</p>
-      <div class="space-y-2">
-        <a class="flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-slate-100" href="#">
-          <span class="flex items-center gap-2"><Avatar size="sm" color="bg-pink-500" initials="SC" /><span class="text-[17px] text-slate-700">Sarah Chen</span></span>
-          <Badge>2</Badge>
-        </a>
-        <a class="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-slate-100" href="#">
-          <Avatar size="sm" color="bg-emerald-500" initials="MW" /><span class="text-[17px] text-slate-700">Marcus Webb</span>
-        </a>
+    <div class="mt-5">
+      <p class="mb-2 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-slate-500">
+        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current">
+          <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z" />
+        </svg>
+        DIRECT MESSAGES
+      </p>
+
+      <div class="space-y-1">
+        <button
+          v-for="person in directMessages"
+          :key="person.name"
+          type="button"
+          class="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition-colors duration-150 hover:bg-slate-200/70"
+        >
+          <span class="flex items-center gap-2.5">
+            <span class="relative">
+              <Avatar size="sm" :color="person.color" :initials="person.initials" />
+              <span
+                class="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#f8fafc]"
+                :class="person.statusColor"
+              />
+            </span>
+            <span class="text-[17px] text-slate-700">{{ person.name }}</span>
+          </span>
+          <Badge v-if="person.unread">{{ person.unread }}</Badge>
+        </button>
+
+        <button class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-slate-400 transition-colors duration-150 hover:bg-slate-200/70">
+          <span class="text-[20px] leading-none">+</span>
+          <span>New direct message</span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="isCreateChannelOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
+      @click.self="closeCreateModal"
+    >
+      <div class="w-[420px] rounded-lg border border-slate-200 bg-white p-5 shadow-[0_18px_36px_rgba(15,23,42,0.22)]">
+        <h3 class="text-[20px] font-semibold text-[#1d1c1d]">Create a channel</h3>
+        <p class="mt-1 text-[14px] text-[#616061]">Channels are where your team communicates.</p>
+
+        <label class="mt-4 block text-[14px] font-medium text-[#1d1c1d]">Channel name</label>
+        <input
+          v-model="newChannelName"
+          type="text"
+          class="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-[15px] text-[#1d1c1d] outline-none transition-colors focus:border-indigo-500"
+          placeholder="e.g. product-updates"
+          @keydown.enter.prevent="createChannel"
+        />
+
+        <label class="mt-3 flex cursor-pointer items-center gap-3 rounded-md border border-slate-200 px-3 py-2.5 hover:bg-slate-50">
+          <input v-model="newChannelPrivate" type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+          <div>
+            <p class="text-[14px] font-medium text-[#1d1c1d]">Make private</p>
+            <p class="text-[12px] text-[#616061]">Only invited members can access this channel.</p>
+          </div>
+        </label>
+
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" class="rounded-md px-3 py-2 text-[14px] font-medium text-slate-600 hover:bg-slate-100" @click="closeCreateModal">Cancel</button>
+          <button
+            type="button"
+            class="rounded-md bg-indigo-600 px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            :disabled="!newChannelName.trim()"
+            @click="createChannel"
+          >
+            Create channel
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import Avatar from "~/components/ui/Avatar.vue";
+import Badge from "~/components/ui/Badge.vue";
+
+const route = useRoute();
+const { workspace, loadWorkspace } = useWorkspace();
+
+type ChannelItem = {
+  slug: string;
+  name: string;
+  private?: boolean;
+  badge?: number;
+  custom?: boolean;
+};
+
+const directMessages = [
+  { name: "Sarah Chen", initials: "SC", color: "bg-pink-500", statusColor: "bg-emerald-500", unread: 2 },
+  { name: "Marcus Webb", initials: "MW", color: "bg-emerald-500", statusColor: "bg-emerald-500" },
+  { name: "Jordan Kim", initials: "JK", color: "bg-amber-500", statusColor: "bg-amber-400" },
+  { name: "Priya Patel", initials: "PP", color: "bg-indigo-500", statusColor: "bg-red-500" },
+];
+
+const baseChannels: ChannelItem[] = [
+  { slug: "general", name: "general", badge: 3 },
+  { slug: "design", name: "design" },
+  { slug: "engineering", name: "engineering", badge: 12 },
+  { slug: "random", name: "random" },
+  { slug: "announcements", name: "announcements", badge: 1 },
+  { slug: "leadership", name: "leadership", private: true },
+];
+
+const customChannels = ref<ChannelItem[]>([]);
+const isCreateChannelOpen = ref(false);
+const newChannelName = ref("");
+const newChannelPrivate = ref(false);
+
+const activeChannel = computed(() => String(route.params.channelId ?? "general"));
+
+const channels = computed(() => [...baseChannels, ...customChannels.value]);
+
+const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.slug || "acme"}`);
+
+const loadCustomChannels = () => {
+  if (!process.client) return;
+  const raw = localStorage.getItem(workspaceStorageKey.value);
+  if (!raw) {
+    customChannels.value = [];
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as ChannelItem[];
+    customChannels.value = parsed.filter((item) => item.custom);
+  } catch {
+    customChannels.value = [];
+  }
+};
+
+const saveCustomChannels = () => {
+  if (!process.client) return;
+  localStorage.setItem(workspaceStorageKey.value, JSON.stringify(customChannels.value));
+};
+
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "new-channel";
+
+const closeCreateModal = () => {
+  isCreateChannelOpen.value = false;
+  newChannelName.value = "";
+  newChannelPrivate.value = false;
+};
+
+const createChannel = async () => {
+  const slugBase = toSlug(newChannelName.value);
+  let slug = slugBase;
+  let suffix = 2;
+  const existing = new Set(channels.value.map((channel) => channel.slug));
+
+  while (existing.has(slug)) {
+    slug = `${slugBase}-${suffix}`;
+    suffix += 1;
+  }
+
+  const channel: ChannelItem = {
+    slug,
+    name: newChannelName.value.trim(),
+    private: newChannelPrivate.value,
+    custom: true,
+  };
+
+  customChannels.value = [...customChannels.value, channel];
+  saveCustomChannels();
+  closeCreateModal();
+  await navigateTo(`/workspace/${workspace.value.slug}/channel/${slug}`);
+};
+
+const goChannel = async (slug: string) => {
+  await navigateTo(`/workspace/${workspace.value.slug}/channel/${slug}`);
+};
+
+onMounted(() => {
+  loadWorkspace();
+  loadCustomChannels();
+});
+
+watch(
+  () => workspace.value.slug,
+  () => {
+    loadCustomChannels();
+  },
+);
+</script>
