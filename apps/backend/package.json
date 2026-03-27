@@ -68,5 +68,9 @@
   },
   "prisma": {
     "schema": "src/database/prisma/schema.prisma"
+  },
+  "overrides": {
+    "@tootallnate/once": "^3.0.1",
+    "ajv": "^8.18.0"
   }
 }
