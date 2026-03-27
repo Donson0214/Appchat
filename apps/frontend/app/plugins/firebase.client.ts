@@ -13,7 +13,8 @@ export default defineNuxtPlugin(async (nuxtApp) => {
     messagingSenderId: config.public.firebaseMessagingSenderId || undefined,
   };
 
-  const app: FirebaseApp = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+  const existingApp = getApps()[0];
+  const app: FirebaseApp = existingApp ?? initializeApp(firebaseConfig);
   const auth: Auth = getAuth(app);
   await setPersistence(auth, browserLocalPersistence);
 

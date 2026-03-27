@@ -28,16 +28,16 @@ exports.AuthModule = AuthModule = __decorate([
             jwt_1.JwtModule.registerAsync({
                 inject: [config_1.ConfigService],
                 useFactory: (configService) => ({
-                    secret: configService.get("JWT_SECRET") ?? "",
+                    secret: configService.get("JWT_SECRET") ?? "dev-secret",
                     signOptions: {
-                        expiresIn: configService.get("JWT_EXPIRES_IN") ?? "15m",
+                        expiresIn: (configService.get("JWT_EXPIRES_IN") ?? "7d"),
                     },
                 }),
             }),
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, firebase_admin_provider_1.firebaseAdminProvider],
-        exports: [auth_service_1.AuthService],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

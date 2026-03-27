@@ -1,68 +1,68 @@
 <template>
-  <aside class="flex h-full w-[84px] flex-col items-center justify-between border-r border-slate-800 bg-[#0d1b3a] py-4">
-    <div class="flex w-full flex-col items-center gap-2.5">
+  <aside class="flex h-full w-[72px] flex-col items-center justify-between border-r border-[#202940] bg-[#111a34] py-8">
+    <div class="flex w-full flex-col items-center gap-3">
       <button
         v-for="(item, index) in workspaces"
         :key="item.id"
-        class="relative flex h-[58px] w-[58px] items-center justify-center rounded-[14px] text-[35px] font-semibold text-white transition-all duration-200 ease-in-out hover:brightness-110"
+        class="relative flex h-11 w-11 items-center justify-center rounded-[10px] text-[20px] font-semibold text-white transition hover:brightness-110"
         :class="item.bg"
       >
         {{ item.label }}
-        <span v-if="index === 0" class="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-indigo-500" />
+        <span v-if="index === 0" class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-indigo-500" />
       </button>
 
       <button
-        class="mt-3 flex h-[58px] w-[58px] items-center justify-center rounded-[14px] border border-dashed border-slate-600 text-[30px] leading-none text-slate-400 transition-all duration-200 ease-in-out hover:bg-slate-800"
+        class="mt-2 flex h-11 w-11 items-center justify-center rounded-[10px] border border-dashed border-[#314063] text-[24px] leading-none text-[#8f98b1] transition hover:bg-[#1c2748]"
       >
         +
       </button>
     </div>
 
-    <div class="relative mb-1">
+    <div class="relative">
       <button
         ref="avatarButtonRef"
-        class="relative flex h-[54px] w-[54px] items-center justify-center rounded-[14px] bg-indigo-500 text-[29px] font-semibold text-white"
+        class="relative flex h-10 w-10 items-center justify-center rounded-[10px] bg-indigo-500 text-[16px] font-semibold text-white"
         @click="toggleProfileMenu"
       >
         {{ userInitial }}
-        <span class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#0d1b3a] bg-emerald-400" />
+        <span class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-[#111a34] bg-emerald-400" />
       </button>
 
       <div
         v-if="isProfileMenuOpen"
         ref="menuRef"
-        class="absolute bottom-0 left-[68px] z-50 w-[336px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_14px_28px_rgba(15,23,42,0.2)]"
+        class="absolute bottom-0 left-[56px] z-50 w-[280px] overflow-hidden rounded-lg border border-[#e5e7eb] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.18)]"
       >
-        <div class="border-b border-slate-200 px-5 py-4">
-          <p class="text-[17px] font-semibold leading-none text-slate-800">{{ userFullName }}</p>
-          <p class="mt-2 text-[13px] leading-none text-slate-500">{{ userEmail }}</p>
+        <div class="border-b border-[#e5e7eb] px-4 py-3">
+          <p class="text-[14px] font-semibold text-[#1d1c1d]">{{ userFullName }}</p>
+          <p class="mt-1 text-[12px] text-[#6b7280]">{{ userEmail }}</p>
         </div>
 
         <button
-          class="flex w-full items-center gap-3 px-5 py-3 text-left text-[17px] font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+          class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] text-[#374151] transition hover:bg-[#f8f8fa]"
           type="button"
           @click="isProfileMenuOpen = false"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 fill-amber-400">
+          <svg viewBox="0 0 20 20" class="h-4 w-4 fill-amber-400">
             <path d="M10 2.5a.8.8 0 0 1 .7 1.2 5.8 5.8 0 1 0 5.6 8.5.8.8 0 0 1 1.4.7A7.4 7.4 0 1 1 10 2.5Z" />
           </svg>
           <span>Set yourself as away</span>
         </button>
 
         <button
-          class="flex w-full items-center gap-3 px-5 py-3 text-left text-[17px] font-medium text-slate-700 transition-colors duration-200 hover:bg-slate-100"
+          class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] text-[#374151] transition hover:bg-[#f8f8fa]"
           type="button"
           @click="isProfileMenuOpen = false"
         >
-          <svg viewBox="0 0 20 20" class="h-5 w-5 fill-violet-200">
+          <svg viewBox="0 0 20 20" class="h-4 w-4 fill-violet-200">
             <path d="M4.2 6.8C5.9 5 8 4.1 10.3 4.1c2.4 0 4.5.9 6.2 2.7a4.3 4.3 0 0 1 0 6.1c-1.7 1.7-3.8 2.6-6.2 2.6-2.3 0-4.4-.9-6.1-2.6a4.3 4.3 0 0 1 0-6.1Z" />
           </svg>
           <span>Set a status</span>
         </button>
 
-        <div class="border-t border-slate-200 px-5 py-3">
+        <div class="border-t border-[#e5e7eb] px-4 py-2.5">
           <button
-            class="text-[17px] font-medium text-red-500 transition-colors duration-200 hover:text-red-600"
+            class="text-[13px] font-medium text-red-500 transition hover:text-red-600"
             type="button"
             @click="handleSignOut"
           >

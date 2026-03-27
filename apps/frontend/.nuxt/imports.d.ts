@@ -32,6 +32,7 @@ export { setInterval } from '#app/compat/interval';
 export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { getPostAuthRedirectPath, useAuthApi } from '../app/composables/use-auth-api';
+export { useChatApi } from '../app/composables/use-chat-api';
 export { useGoogleAuth } from '../app/composables/use-google-auth';
+export { useThreadPanel } from '../app/composables/use-thread-panel';
 export { useWorkspace } from '../app/composables/use-workspace';
-export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';

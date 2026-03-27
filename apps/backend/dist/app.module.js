@@ -9,8 +9,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const core_1 = require("@nestjs/core");
+const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const prisma_module_1 = require("./database/prisma/prisma.module");
 const auth_module_1 = require("./modules/auth/auth.module");
+const channel_module_1 = require("./modules/channel/channel.module");
+const membership_module_1 = require("./modules/membership/membership.module");
+const message_module_1 = require("./modules/message/message.module");
+const users_module_1 = require("./modules/users/users.module");
+const workspace_module_1 = require("./modules/workspace/workspace.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -20,6 +27,17 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
+            users_module_1.UsersModule,
+            workspace_module_1.WorkspaceModule,
+            membership_module_1.MembershipModule,
+            channel_module_1.ChannelModule,
+            message_module_1.MessageModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: jwt_auth_guard_1.JwtAuthGuard,
+            },
         ],
     })
 ], AppModule);

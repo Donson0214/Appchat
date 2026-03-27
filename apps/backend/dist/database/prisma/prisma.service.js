@@ -24,33 +24,9 @@ let PrismaService = class PrismaService extends client_1.PrismaClient {
     }
     async onModuleInit() {
         await this.$connect();
-        await this.ensureAuthTables();
     }
     async onModuleDestroy() {
         await this.$disconnect();
-    }
-    async ensureAuthTables() {
-        await this.$executeRawUnsafe(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'AuthProvider') THEN
-          CREATE TYPE "AuthProvider" AS ENUM ('EMAIL', 'GOOGLE');
-        END IF;
-      END
-      $$;
-    `);
-        await this.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "User" (
-        id TEXT PRIMARY KEY,
-        email TEXT NOT NULL UNIQUE,
-        "fullName" TEXT,
-        "avatarUrl" TEXT,
-        "passwordHash" TEXT,
-        provider "AuthProvider" NOT NULL DEFAULT 'EMAIL',
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
     }
 };
 exports.PrismaService = PrismaService;

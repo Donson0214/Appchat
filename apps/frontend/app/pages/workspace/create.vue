@@ -31,6 +31,7 @@ const workspaceName = ref("");
 const errorMessage = ref("");
 const submitting = ref(false);
 const { saveWorkspace } = useWorkspace();
+const { createWorkspace } = useChatApi();
 
 const slugify = (value: string) =>
   value
@@ -51,15 +52,20 @@ const handleCreateWorkspace = async () => {
     submitting.value = true;
     errorMessage.value = "";
 
-    const workspace = {
-      id: crypto.randomUUID(),
-      name,
-      slug: slugify(name) || "workspace",
-      createdAt: new Date().toISOString(),
-    };
+    const workspace = await createWorkspace(name);
 
-    saveWorkspace(workspace);
-    await navigateTo(`/workspace/${workspace.slug}/channel/general`);
+    saveWorkspace({
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug || slugify(name) || "workspace",
+      createdAt: workspace.createdAt,
+      inviteCode: workspace.inviteCode,
+    });
+
+    const channelTarget = workspace.defaultChannelId ?? "general";
+    await navigateTo(`/workspace/${workspace.slug}/channel/${channelTarget}`);
+  } catch (error: any) {
+    errorMessage.value = error?.data?.message ?? "Workspace creation failed";
   } finally {
     submitting.value = false;
   }

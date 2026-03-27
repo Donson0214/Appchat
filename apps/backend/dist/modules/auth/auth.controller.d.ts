@@ -1,7 +1,7 @@
 import { AuthService } from "./auth.service";
+import { FirebaseLoginDto } from "./dto/firebase-login.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
-import { FirebaseLoginDto } from "./dto/firebase-login.dto";
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -10,9 +10,7 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -20,9 +18,7 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
     firebase(dto: FirebaseLoginDto): Promise<{
@@ -30,9 +26,7 @@ export declare class AuthController {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
 }

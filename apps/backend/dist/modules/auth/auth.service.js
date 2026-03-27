@@ -47,8 +47,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const jwt_1 = require("@nestjs/jwt");
 const config_1 = require("@nestjs/config");
+const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
 const auth_1 = require("firebase-admin/auth");
 const prisma_service_1 = require("../../database/prisma/prisma.service");
@@ -61,70 +61,67 @@ let AuthService = class AuthService {
         this.firebaseAdmin = firebaseAdmin;
     }
     async register(dto) {
-        const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const email = dto.email.toLowerCase().trim();
+        const existing = await this.prisma.user.findUnique({ where: { email } });
         if (existing) {
             throw new common_1.BadRequestException("Email already in use");
         }
         const passwordHash = await bcrypt.hash(dto.password, 12);
         const user = await this.prisma.user.create({
             data: {
-                email: dto.email,
-                fullName: dto.fullName,
+                email,
                 passwordHash,
-                provider: "EMAIL",
+                name: dto.name?.trim() || null,
             },
         });
         return this.buildAuthResponse(user);
     }
     async login(dto) {
-        const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const email = dto.email.toLowerCase().trim();
+        const user = await this.prisma.user.findUnique({ where: { email } });
         if (!user || !user.passwordHash) {
             throw new common_1.UnauthorizedException("Invalid credentials");
         }
-        const valid = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!valid) {
+        const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!passwordMatch) {
             throw new common_1.UnauthorizedException("Invalid credentials");
         }
         return this.buildAuthResponse(user);
     }
     async loginWithFirebase(idToken) {
         const decoded = await (0, auth_1.getAuth)(this.firebaseAdmin).verifyIdToken(idToken, true);
-        const email = decoded.email?.toLowerCase();
+        const email = decoded.email?.toLowerCase().trim();
         if (!email) {
             throw new common_1.UnauthorizedException("Firebase token missing email");
         }
-        const fullName = decoded.name ?? null;
-        const avatarUrl = decoded.picture ?? null;
         const user = await this.prisma.user.upsert({
             where: { email },
             create: {
                 email,
-                fullName,
-                avatarUrl,
-                provider: "GOOGLE",
+                name: decoded.name ?? null,
+                passwordHash: null,
             },
             update: {
-                fullName: fullName ?? undefined,
-                avatarUrl: avatarUrl ?? undefined,
-                provider: "GOOGLE",
+                name: decoded.name ?? undefined,
             },
         });
         return this.buildAuthResponse(user);
     }
     buildAuthResponse(user) {
-        const payload = { sub: user.id, email: user.email };
-        const accessToken = this.jwtService.sign(payload, {
-            secret: this.configService.get("JWT_SECRET") ?? "",
-            expiresIn: this.configService.get("JWT_EXPIRES_IN") ?? "15m",
+        const payload = {
+            sub: user.id,
+            email: user.email,
+        };
+        const token = this.jwtService.sign(payload, {
+            secret: this.configService.get("JWT_SECRET") ?? "dev-secret",
+            expiresIn: (this.configService.get("JWT_EXPIRES_IN") ?? "7d"),
         });
         return {
-            accessToken,
+            accessToken: token,
             user: {
                 id: user.id,
                 email: user.email,
-                fullName: user.fullName,
-                avatarUrl: user.avatarUrl,
-                provider: user.provider,
+                name: user.name,
             },
         };
     }

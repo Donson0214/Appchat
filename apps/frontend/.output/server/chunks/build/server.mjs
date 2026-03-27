@@ -618,12 +618,12 @@ const _routes = [
   {
     name: "workspace-create",
     path: "/workspace/create",
-    component: () => import('./create-CV94unXO.mjs')
+    component: () => import('./create-Bez05VaL.mjs')
   },
   {
     name: "workspace-workspaceId-channel-channelId",
     path: "/workspace/:workspaceId()/channel/:channelId()",
-    component: () => import('./_channelId_-D2yZ-CY1.mjs')
+    component: () => import('./_channelId_-BPL5OQKp.mjs')
   },
   {
     name: "admin",
@@ -653,12 +653,12 @@ const _routes = [
   {
     name: "sign-in",
     path: "/sign-in",
-    component: () => import('./sign-in-weYEMP9A.mjs')
+    component: () => import('./sign-in-DC8qEu7u.mjs')
   },
   {
     name: "sign-up",
     path: "/sign-up",
-    component: () => import('./sign-up-saUMzmcr.mjs')
+    component: () => import('./sign-up-CyTDinDH.mjs')
   },
   {
     name: "index",
@@ -1217,5 +1217,5 @@ let entry;
 }
 const entry_default = ((ssrContext) => entry(ssrContext));
 
-export { _export_sfc as _, useRoute as a, useRouter as b, useRuntimeConfig as c, nuxtLinkDefaults as d, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useNuxtApp as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
+export { _export_sfc as _, useRoute as a, useRuntimeConfig as b, useRouter as c, nuxtLinkDefaults as d, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useNuxtApp as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
 //# sourceMappingURL=server.mjs.map

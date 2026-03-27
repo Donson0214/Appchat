@@ -3,6 +3,7 @@ type Workspace = {
   name: string;
   slug: string;
   createdAt: string;
+  inviteCode?: string;
 };
 
 const FALLBACK_WORKSPACE: Workspace = {

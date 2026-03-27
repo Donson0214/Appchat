@@ -5,5 +5,4 @@ export declare class PrismaService extends PrismaClient implements OnModuleInit,
     constructor(configService: ConfigService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
-    private ensureAuthTables;
 }

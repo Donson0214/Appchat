@@ -16,7 +16,7 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "https://localhost:3000",
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "https://localhost:3100",
       firebaseApiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY ?? "",
       firebaseAuthDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
       firebaseProjectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",

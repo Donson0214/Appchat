@@ -6,18 +6,98 @@ datasource db {
   provider = "postgresql"
 }
 
-enum AuthProvider {
-  EMAIL
-  GOOGLE
+enum WorkspaceRole {
+  ADMIN
+  MEMBER
+}
+
+enum ChannelType {
+  PUBLIC
+  PRIVATE
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  fullName     String?
-  avatarUrl    String?
-  passwordHash String?
-  provider     AuthProvider @default(EMAIL)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id               String            @id @default(uuid())
+  email            String            @unique
+  passwordHash     String?
+  name             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  workspaceMembers WorkspaceMember[]
+  channelMembers   ChannelMember[]
+  messages         Message[]
+  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  createdChannels  Channel[]         @relation("ChannelCreator")
+}
+
+model Workspace {
+  id         String            @id @default(uuid())
+  name       String
+  slug       String            @unique
+  inviteCode String            @unique
+  ownerId    String
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  owner      User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members    WorkspaceMember[]
+  channels   Channel[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  joinedAt    DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Channel {
+  id          String          @id @default(uuid())
+  workspaceId String
+  name        String
+  description String?
+  type        ChannelType
+  createdById String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy   User            @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members     ChannelMember[]
+  messages    Message[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model ChannelMember {
+  id        String   @id @default(uuid())
+  channelId String
+  userId    String
+  joinedAt  DateTime @default(now())
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  channelId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, createdAt])
+  @@index([userId])
 }

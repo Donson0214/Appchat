@@ -1,31 +1,40 @@
 <template>
-  <div class="mt-2 flex flex-wrap items-center gap-2">
+  <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
     <button
       v-for="reaction in reactions"
       :key="reaction.emoji"
-      class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-[14px] font-medium text-slate-600 transition-colors duration-200 hover:bg-slate-100"
+      class="inline-flex items-center gap-1 rounded-[8px] border border-[#e5e7eb] bg-[#f1f2f4] px-2 py-0.5 text-[12px] font-medium text-[#616061] transition hover:bg-[#e8eaed]"
       type="button"
     >
-      <span class="text-[16px] leading-none">{{ reaction.emoji }}</span>
+      <span class="text-[13px] leading-none">{{ reaction.emoji }}</span>
       <span>{{ reaction.count }}</span>
     </button>
 
-    <div v-if="replies" class="inline-flex items-center gap-1 text-[15px] leading-6">
+    <button
+      v-if="replies"
+      type="button"
+      class="inline-flex items-center gap-1 text-[13px] leading-[18px]"
+      @click="$emit('openThread')"
+    >
       <span
         v-for="reply in replyUsers"
         :key="reply.initials"
-        class="inline-flex h-7 w-7 items-center justify-center rounded-md text-[12px] font-semibold text-white"
+        class="inline-flex h-5 w-5 items-center justify-center rounded-md text-[10px] font-semibold text-white"
         :class="reply.color"
       >
         {{ reply.initials }}
       </span>
       <span class="ml-1 font-semibold text-indigo-600">{{ replies }} replies</span>
-      <span class="font-normal text-slate-400">{{ lastReply }}</span>
-    </div>
+      <span class="font-normal text-[#8f95a3]">{{ lastReply }}</span>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+defineEmits<{
+  openThread: [];
+}>();
+
 defineProps<{
   reactions?: Array<{ emoji: string; count: number }>;
   replies?: number;

@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="flex min-h-0 flex-1 flex-col">
+  <div class="flex min-h-0 flex-1 flex-col bg-white">
     <MessageList
       :channel-name="channel.name"
       :channel-description="channel.description"

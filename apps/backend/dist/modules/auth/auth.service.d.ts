@@ -1,5 +1,5 @@
-import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
+import { JwtService } from "@nestjs/jwt";
 import type { App } from "firebase-admin/app";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { LoginDto } from "./dto/login.dto";
@@ -15,9 +15,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -25,9 +23,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
     loginWithFirebase(idToken: string): Promise<{
@@ -35,9 +31,7 @@ export declare class AuthService {
         user: {
             id: string;
             email: string;
-            fullName: string | null;
-            avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            name: string | null;
         };
     }>;
     private buildAuthResponse;

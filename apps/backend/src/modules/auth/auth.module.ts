@@ -1,7 +1,8 @@
-﻿import { Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
+import { StringValue } from "ms";
 import { PrismaModule } from "../../database/prisma/prisma.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
@@ -16,21 +17,15 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>("JWT_SECRET") ?? "",
+        secret: configService.get<string>("JWT_SECRET") ?? "dev-secret",
         signOptions: {
-          expiresIn:
-            (configService.get<string>("JWT_EXPIRES_IN") as
-              | `${number}ms`
-              | `${number}s`
-              | `${number}m`
-              | `${number}h`
-              | `${number}d`) ?? "15m",
+          expiresIn: (configService.get<string>("JWT_EXPIRES_IN") ?? "7d") as StringValue,
         },
       }),
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, firebaseAdminProvider],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

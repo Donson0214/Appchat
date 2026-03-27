@@ -1,0 +1,387 @@
+{
+  "info": {
+    "_postman_id": "3f4f68dc-56fd-4bf0-8ebf-7c398033f2b3",
+    "name": "AppChat Backend MVP",
+    "description": "End-to-end API flow for AppChat backend: auth -> workspace -> channel -> message -> membership.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "wsBaseUrl", "value": "ws://localhost:3000" },
+    { "key": "email", "value": "owner@appchat.dev" },
+    { "key": "password", "value": "Password123!" },
+    { "key": "name", "value": "Owner User" },
+    { "key": "accessToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "workspaceId", "value": "" },
+    { "key": "workspaceInviteCode", "value": "" },
+    { "key": "channelId", "value": "" },
+    { "key": "targetUserId", "value": "" },
+    { "key": "messageId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1) Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"{{name}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Create first user and auto-save token/userId from response."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  if (data.user?.id) pm.collectionVariables.set('userId', data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate and save accessToken/userId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login success', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const data = pm.response.json();",
+                  "if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "if (data.user?.id) pm.collectionVariables.set('userId', data.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Workspace",
+      "item": [
+        {
+          "name": "Create Workspace",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"AppChat HQ\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workspaces",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.collectionVariables.set('workspaceId', data.id);",
+                  "if (data.inviteCode) pm.collectionVariables.set('workspaceInviteCode', data.inviteCode);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List My Workspaces",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/workspaces",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces"]
+            }
+          }
+        },
+        {
+          "name": "Join Workspace by Invite Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"{{workspaceInviteCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "join"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Channel",
+      "item": [
+        {
+          "name": "Create Public Channel",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"general\",\n  \"description\": \"General team chat\",\n  \"type\": \"PUBLIC\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspaceId}}/channels",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "{{workspaceId}}", "channels"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.collectionVariables.set('channelId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Channels In Workspace",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspaceId}}/channels",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "{{workspaceId}}", "channels"]
+            }
+          }
+        },
+        {
+          "name": "Join Channel",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "join"]
+            }
+          }
+        },
+        {
+          "name": "Leave Channel",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "leave"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Messages",
+      "item": [
+        {
+          "name": "Send Message (HTTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello from Postman HTTP API\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "messages"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) pm.collectionVariables.set('messageId', data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Messages (Paginated)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/messages?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "messages"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "cursor", "value": "", "disabled": true }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5) Membership",
+      "item": [
+        {
+          "name": "Add Workspace Member (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{targetUserId}}\",\n  \"role\": \"MEMBER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspaceId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "{{workspaceId}}", "members"]
+            },
+            "description": "Set targetUserId first (create/login second account)."
+          }
+        },
+        {
+          "name": "Update Workspace Member Role (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspaceId}}/members/{{targetUserId}}/role",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "{{workspaceId}}", "members", "{{targetUserId}}", "role"]
+            }
+          }
+        },
+        {
+          "name": "Remove Workspace Member (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/workspaces/{{workspaceId}}/members/{{targetUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["workspaces", "{{workspaceId}}", "members", "{{targetUserId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add User To Private Channel (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{targetUserId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "members"]
+            },
+            "description": "Works only for PRIVATE channels."
+          }
+        },
+        {
+          "name": "Remove User From Channel (Admin)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/channels/{{channelId}}/members/{{targetUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["channels", "{{channelId}}", "members", "{{targetUserId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

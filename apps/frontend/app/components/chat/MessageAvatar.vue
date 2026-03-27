@@ -10,4 +10,3 @@ defineProps<{
   color: string;
 }>();
 </script>
-

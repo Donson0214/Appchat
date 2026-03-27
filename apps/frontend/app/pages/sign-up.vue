@@ -109,7 +109,7 @@ const handleEmailRegister = async () => {
     errorMessage.value = "";
 
     await registerWithEmail({
-      fullName: fullName.value.trim(),
+      name: fullName.value.trim(),
       email: email.value.trim().toLowerCase(),
       password: password.value,
     });

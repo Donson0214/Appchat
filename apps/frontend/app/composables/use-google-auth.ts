@@ -5,11 +5,14 @@ const getApiBaseUrl = (rawBaseUrl: string) => {
   const trimmed = (rawBaseUrl || "").trim();
 
   if (!trimmed) {
-    return "https://localhost:3000";
+    return "https://localhost:3100";
   }
 
-  if (trimmed.startsWith("http://localhost:3000")) {
-    return trimmed.replace("http://localhost:3000", "https://localhost:3000");
+  if (
+    trimmed.startsWith("http://localhost:3000") ||
+    trimmed.startsWith("https://localhost:3000")
+  ) {
+    return "https://localhost:3100";
   }
 
   return trimmed;
@@ -20,9 +23,7 @@ type GoogleAuthResponse = {
   user: {
     id: string;
     email: string;
-    fullName: string | null;
-    avatarUrl: string | null;
-    provider: "EMAIL" | "GOOGLE";
+    name: string | null;
   };
 };
 

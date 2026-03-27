@@ -1,0 +1,187 @@
+
+> backend@1.0.0 dev
+> nest start --watch
+
+[2J[3J[H[[90m11:58:06 PM[0m] Starting compilation in watch mode...
+
+[[90m11:58:10 PM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +14ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +4ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWorkspaceModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMembershipModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChannelModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:11 PM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMessageModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "join_channel" message[39m[38;5;3m +20ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "leave_channel" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +3ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/users}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/users/me, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/users, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWorkspaceController {/workspaces}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMembershipController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members/:targetUserId/role, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members/:targetUserId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/members/:targetUserId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChannelController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/channels, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/channels, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/join, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMessageController {/channels/:channelId/messages}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/messages, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/messages, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +97ms[39m
+[31m[Nest] 13240  - [39m03/27/2026, 11:58:12 PM [31m  ERROR[39m [38;5;3m[NestApplication] [39m[31mError: listen EADDRINUSE: address already in use :::3100[39m[38;5;3m +3ms[39m
+node:net:1948
+    const ex = new UVExceptionWithHostPort(err, 'listen', address, port);
+               ^
+
+Error: listen EADDRINUSE: address already in use :::3100
+    at Server.setupListenHandle [as _listen2] (node:net:1948:16)
+    at listenInCluster (node:net:2005:12)
+    at Server.listen (node:net:2110:7)
+    at ExpressAdapter.listen (C:\Users\ADMIN\Appchat\apps\backend\node_modules\@nestjs\platform-express\adapters\express-adapter.js:127:32)
+    at C:\Users\ADMIN\Appchat\apps\backend\node_modules\@nestjs\core\nest-application.js:188:30
+    at new Promise (<anonymous>)
+    at NestApplication.listen (C:\Users\ADMIN\Appchat\apps\backend\node_modules\@nestjs\core\nest-application.js:178:16)
+    at async bootstrap (C:\Users\ADMIN\Appchat\apps\backend\src\main.ts:37:3) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 3100
+}
+
+Node.js v24.14.0
+[2J[3J[H[[90m12:03:33 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/modules/auth/auth.controller.ts[0m:[93m27[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'loginWithFirebase' does not exist on type 'AuthService'.
+
+[7m27[0m     return this.authService.loginWithFirebase(dto.idToken);
+[7m  [0m [91m                            ~~~~~~~~~~~~~~~~~[0m
+
+[[90m12:03:34 AM[0m] Found 1 error. Watching for file changes.
+
+[2J[3J[H[[90m12:03:46 AM[0m] File change detected. Starting incremental compilation...
+
+[96msrc/modules/auth/auth.service.ts[0m:[93m20[0m:[93m6[0m - [91merror[0m[90m TS2304: [0mCannot find name 'Inject'.
+
+[7m20[0m     @Inject(FIREBASE_ADMIN) private readonly firebaseAdmin: App,
+[7m  [0m [91m     ~~~~~~[0m
+
+[[90m12:03:46 AM[0m] Found 1 error. Watching for file changes.
+
+[2J[3J[H[[90m12:04:14 AM[0m] File change detected. Starting incremental compilation...
+
+[[90m12:04:14 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 16964  - [39m03/28/2026, 12:04:17 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 16964  - [39m03/28/2026, 12:04:17 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +31ms[39m
+[31m[Nest] 16964  - [39m03/28/2026, 12:04:17 AM [31m  ERROR[39m [38;5;3m[ExceptionHandler] [39mUnknownDependenciesException [Error]: Nest can't resolve dependencies of the AuthService (PrismaService, JwtService, ConfigService, ?). Please make sure that the argument "FIREBASE_ADMIN" at index [3] is available in the AuthModule module.
+
+Potential solutions:
+- Is AuthModule a valid NestJS module?
+- If "FIREBASE_ADMIN" is a provider, is it part of the current AuthModule?
+- If "FIREBASE_ADMIN" is exported from a separate @Module, is that module imported within AuthModule?
+  @Module({
+    imports: [ /* the Module containing "FIREBASE_ADMIN" */ ]
+  })
+
+For more common dependency resolution issues, see: https://docs.nestjs.com/faq/common-errors
+    at Injector.lookupComponentInParentModules [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\injector.js:290:19[90m)[39m
+    at async resolveParam [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\injector.js:140:38[90m)[39m
+    at async Promise.all (index 3)
+    at async Injector.resolveConstructorParams [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\injector.js:169:27[90m)[39m
+    at async Injector.loadInstance [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\injector.js:75:13[90m)[39m
+    at async Injector.loadProvider [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\injector.js:103:9[90m)[39m
+    at async [90mC:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\instance-loader.js:56:13
+    at async Promise.all (index 3)
+    at async InstanceLoader.createInstancesOfProviders [90m(C:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\instance-loader.js:55:9[90m)[39m
+    at async [90mC:\Users\ADMIN\Appchat\apps\backend\[39mnode_modules\[4m@nestjs\core[24m\injector\instance-loader.js:40:13 {
+  type: [32m'AuthService'[39m,
+  context: {
+    index: [33m3[39m,
+    dependencies: [
+      [36m[class PrismaService extends t][39m,
+      [36m[class JwtService][39m,
+      [36m[class ConfigService][39m,
+      [32m'FIREBASE_ADMIN'[39m
+    ],
+    name: [32m'FIREBASE_ADMIN'[39m
+  },
+  metadata: {
+    id: [32m'e3d1fda903fa6a35ec588'[39m
+  },
+  moduleRef: {
+    id: [32m'5a077cd1bffc9a9f15457'[39m
+  }
+}
+[2J[3J[H[[90m12:04:25 AM[0m] File change detected. Starting incremental compilation...
+
+[[90m12:04:26 AM[0m] Found 0 errors. Watching for file changes.
+
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPassportModule dependencies initialized[39m[38;5;3m +33ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigHostModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +146ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mConfigModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mPrismaModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mJwtModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mUsersModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mWorkspaceModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMembershipModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mChannelModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mMessageModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "join_channel" message[39m[38;5;3m +45ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "leave_channel" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mMessageGateway subscribed to the "send_message" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +2ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +3ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/firebase, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mUsersController {/users}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/users/me, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/users, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mWorkspaceController {/workspaces}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMembershipController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members/:targetUserId/role, PATCH} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/members/:targetUserId, DELETE} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/members, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/members/:targetUserId, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mChannelController {/}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/channels, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/workspaces/:workspaceId/channels, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/join, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/leave, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mMessageController {/channels/:channelId/messages}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/messages, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:28 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/channels/:channelId/messages, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 19656  - [39m03/28/2026, 12:04:29 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +140ms[39m
+^C^C
