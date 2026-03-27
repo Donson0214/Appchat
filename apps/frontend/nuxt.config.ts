@@ -8,9 +8,15 @@ const certPath = join(mkcertDir, "cert.pem");
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-03-27",
+  components: [
+    {
+      path: "~/app/components",
+      pathPrefix: false,
+    },
+  ],
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "http://localhost:3000",
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "https://localhost:3000",
       firebaseApiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY ?? "",
       firebaseAuthDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
       firebaseProjectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",

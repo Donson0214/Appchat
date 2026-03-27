@@ -1,7 +1,13 @@
-﻿<template>
-  <Avatar :initials="initials" :color="color" size="md" />
+<template>
+  <Avatar size="md" :color="color" :initials="initials" class="mt-0.5" />
 </template>
 
 <script setup lang="ts">
-defineProps<{ initials: string; color: string }>();
+import Avatar from "~/components/ui/Avatar.vue";
+
+defineProps<{
+  initials: string;
+  color: string;
+}>();
 </script>
+

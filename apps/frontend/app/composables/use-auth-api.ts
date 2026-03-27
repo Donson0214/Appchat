@@ -26,6 +26,21 @@ const TOKEN_KEY = "appchat_access_token";
 const USER_KEY = "appchat_user";
 const WORKSPACE_KEY = "appchat_workspace";
 
+const getApiBaseUrl = (rawBaseUrl: string) => {
+  const trimmed = (rawBaseUrl || "").trim();
+
+  if (!trimmed) {
+    return "https://localhost:3000";
+  }
+
+  // Guard against stale env/runtime using HTTP while backend is HTTPS.
+  if (trimmed.startsWith("http://localhost:3000")) {
+    return trimmed.replace("http://localhost:3000", "https://localhost:3000");
+  }
+
+  return trimmed;
+};
+
 const persistAuth = (payload: AuthResponse) => {
   if (!process.client) {
     return;
@@ -46,9 +61,10 @@ export const getPostAuthRedirectPath = () => {
 
 export const useAuthApi = () => {
   const config = useRuntimeConfig();
+  const apiBaseUrl = getApiBaseUrl(config.public.apiBaseUrl);
 
   const registerWithEmail = async (payload: RegisterPayload): Promise<AuthResponse> => {
-    const response = await $fetch<AuthResponse>(`${config.public.apiBaseUrl}/auth/register`, {
+    const response = await $fetch<AuthResponse>(`${apiBaseUrl}/auth/register`, {
       method: "POST",
       body: payload,
     });
@@ -57,7 +73,7 @@ export const useAuthApi = () => {
   };
 
   const loginWithEmail = async (payload: LoginPayload): Promise<AuthResponse> => {
-    const response = await $fetch<AuthResponse>(`${config.public.apiBaseUrl}/auth/login`, {
+    const response = await $fetch<AuthResponse>(`${apiBaseUrl}/auth/login`, {
       method: "POST",
       body: payload,
     });

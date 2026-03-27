@@ -1,5 +1,22 @@
-globalThis.__timing__.logStart('Load chunks/build/create-_omQGvSx');import { defineComponent, ref, mergeProps, unref, useSSRContext } from 'vue';
+globalThis.__timing__.logStart('Load chunks/build/create-CV94unXO');import { defineComponent, ref, mergeProps, unref, useSSRContext } from 'vue';
 import { ssrRenderAttrs, ssrRenderAttr, ssrInterpolate, ssrIncludeBooleanAttr } from 'vue/server-renderer';
+import { u as useWorkspace } from './use-workspace-6sM3_VsR.mjs';
+import './server.mjs';
+import '../_/nitro.mjs';
+import 'node:http';
+import 'node:https';
+import 'node:events';
+import 'node:buffer';
+import 'node:fs';
+import 'node:path';
+import 'node:crypto';
+import 'node:url';
+import '../routes/renderer.mjs';
+import 'vue-bundle-renderer/runtime';
+import 'unhead/server';
+import 'devalue';
+import 'unhead/utils';
+import 'vue-router';
 
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "create",
@@ -8,6 +25,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     const workspaceName = ref("");
     const errorMessage = ref("");
     const submitting = ref(false);
+    useWorkspace();
     return (_ctx, _push, _parent, _attrs) => {
       _push(`<div${ssrRenderAttrs(mergeProps({ class: "min-h-screen bg-[#f3f4f6] px-6 pt-[108px]" }, _attrs))}><div class="mx-auto w-full max-w-[420px] rounded-[10px] border border-slate-300 bg-[#f3f4f6] p-6 shadow-[0_1px_2px_rgba(15,23,42,0.07),0_6px_20px_rgba(15,23,42,0.04)]"><h1 class="text-[28px] font-semibold text-slate-900">Create your workspace</h1><p class="mt-1 text-[14px] text-slate-500">This will be your first workspace in AppChat.</p><label class="mt-6 block text-[14px] font-medium text-slate-900">Workspace name</label><input${ssrRenderAttr("value", unref(workspaceName))} type="text" placeholder="My Team" class="mt-2 h-[42px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[15px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15">`);
       if (unref(errorMessage)) {
@@ -26,5 +44,5 @@ _sfc_main.setup = (props, ctx) => {
   return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
 };
 
-export { _sfc_main as default };;globalThis.__timing__.logEnd('Load chunks/build/create-_omQGvSx');
-//# sourceMappingURL=create-_omQGvSx.mjs.map
+export { _sfc_main as default };;globalThis.__timing__.logEnd('Load chunks/build/create-CV94unXO');
+//# sourceMappingURL=create-CV94unXO.mjs.map

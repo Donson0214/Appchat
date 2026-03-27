@@ -1,1 +1,0 @@
-import{d as s,e as a,n as o}from"./CkWFnFaM.js";const _=s({__name:"index",async setup(c){let e,t;if(!localStorage.getItem("appchat_access_token"))[e,t]=a(()=>o("/sign-in",{replace:!0})),await e,t();else{const n=localStorage.getItem("appchat_workspace");[e,t]=a(()=>o(n?"/app":"/workspace/create",{replace:!0})),await e,t()}return()=>{}}});export{_ as default};

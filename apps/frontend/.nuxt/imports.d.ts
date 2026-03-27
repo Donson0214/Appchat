@@ -33,4 +33,5 @@ export { definePageMeta, PageMeta } from '#app/composables/pages';
 export { defineLazyHydrationComponent } from '#app/composables/lazy-hydration';
 export { getPostAuthRedirectPath, useAuthApi } from '../app/composables/use-auth-api';
 export { useGoogleAuth } from '../app/composables/use-google-auth';
+export { useWorkspace } from '../app/composables/use-workspace';
 export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
