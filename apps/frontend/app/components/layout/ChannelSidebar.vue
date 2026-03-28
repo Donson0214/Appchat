@@ -30,11 +30,11 @@
       <div class="space-y-0.5 text-[17px] text-[#475569]">
         <button
           v-for="channel in channels"
-          :key="channel.slug"
+          :key="channel.id || channel.slug"
           type="button"
           class="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left transition-colors duration-150"
-          :class="channel.slug === activeChannel ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200/70'"
-          @click="goChannel(channel.slug)"
+          :class="channel.id === activeChannel || channel.slug === activeChannel ? 'bg-indigo-100 text-indigo-600' : 'hover:bg-slate-200/70'"
+          @click="goChannel(channel)"
         >
           <span class="flex min-w-0 items-center gap-2.5">
             <svg v-if="channel.private" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-slate-400">
@@ -68,9 +68,11 @@
       <div class="space-y-1">
         <button
           v-for="person in directMessages"
-          :key="person.name"
+          :key="person.id"
           type="button"
           class="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition-colors duration-150 hover:bg-slate-200/70"
+          :class="activeDirectMessage === person.id ? 'bg-indigo-100' : ''"
+          @click="goDirectMessage(person)"
         >
           <span class="flex items-center gap-2.5">
             <span class="relative">
@@ -80,7 +82,7 @@
                 :class="person.statusColor"
               />
             </span>
-            <span class="text-[17px] text-slate-700">{{ person.name }}</span>
+            <span class="text-[17px]" :class="activeDirectMessage === person.id ? 'text-indigo-600' : 'text-slate-700'">{{ person.name }}</span>
           </span>
           <Badge v-if="person.unread">{{ person.unread }}</Badge>
         </button>
@@ -118,15 +120,31 @@
           </div>
         </label>
 
+        <label class="mt-3 block text-[14px] font-medium text-[#1d1c1d]">Invite emails (optional)</label>
+        <input
+          v-model="inviteEmailsRaw"
+          type="text"
+          class="mt-1 h-11 w-full rounded-md border border-slate-300 px-3 text-[14px] text-[#1d1c1d] outline-none transition-colors focus:border-indigo-500"
+          placeholder="e.g. sarah@company.com, jordan@company.com"
+        />
+        <p v-if="createChannelError" class="mt-2 text-[12px] font-medium text-red-600">{{ createChannelError }}</p>
+
         <div class="mt-4 flex justify-end gap-2">
-          <button type="button" class="rounded-md px-3 py-2 text-[14px] font-medium text-slate-600 hover:bg-slate-100" @click="closeCreateModal">Cancel</button>
+          <button
+            type="button"
+            class="rounded-md px-3 py-2 text-[14px] font-medium text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            :disabled="createChannelSubmitting"
+            @click="closeCreateModal"
+          >
+            Cancel
+          </button>
           <button
             type="button"
             class="rounded-md bg-indigo-600 px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-300"
-            :disabled="!newChannelName.trim()"
+            :disabled="!newChannelName.trim() || createChannelSubmitting"
             @click="createChannel"
           >
-            Create channel
+            {{ createChannelSubmitting ? "Creating..." : "Create channel" }}
           </button>
         </div>
       </div>
@@ -135,13 +153,19 @@
 </template>
 
 <script setup lang="ts">
-import Avatar from "~/components/ui/Avatar.vue";
-import Badge from "~/components/ui/Badge.vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import Avatar from "../ui/Avatar.vue";
+import Badge from "../ui/Badge.vue";
+import { useWorkspace } from "../../composables/use-workspace";
+import { useChannelApi } from "../../composables/use-channel-api";
 
 const route = useRoute();
+const router = useRouter();
 const { workspace, loadWorkspace } = useWorkspace();
 
 type ChannelItem = {
+  id?: string;
   slug: string;
   name: string;
   private?: boolean;
@@ -150,34 +174,37 @@ type ChannelItem = {
 };
 
 const directMessages = [
-  { name: "Sarah Chen", initials: "SC", color: "bg-pink-500", statusColor: "bg-emerald-500", unread: 2 },
-  { name: "Marcus Webb", initials: "MW", color: "bg-emerald-500", statusColor: "bg-emerald-500" },
-  { name: "Jordan Kim", initials: "JK", color: "bg-amber-500", statusColor: "bg-amber-400" },
-  { name: "Priya Patel", initials: "PP", color: "bg-indigo-500", statusColor: "bg-red-500" },
+  { id: "sarah-chen", name: "Sarah Chen", initials: "SC", color: "bg-pink-500", statusColor: "bg-emerald-500", unread: 2 },
+  { id: "marcus-webb", name: "Marcus Webb", initials: "MW", color: "bg-emerald-500", statusColor: "bg-emerald-500" },
+  { id: "jordan-kim", name: "Jordan Kim", initials: "JK", color: "bg-amber-500", statusColor: "bg-amber-400" },
+  { id: "priya-patel", name: "Priya Patel", initials: "PP", color: "bg-indigo-500", statusColor: "bg-red-500" },
 ];
 
 const baseChannels: ChannelItem[] = [
-  { slug: "general", name: "general", badge: 3 },
-  { slug: "design", name: "design" },
-  { slug: "engineering", name: "engineering", badge: 12 },
-  { slug: "random", name: "random" },
-  { slug: "announcements", name: "announcements", badge: 1 },
-  { slug: "leadership", name: "leadership", private: true },
+  { id: "general", slug: "general", name: "general", badge: 3 },
+  { id: "announcements", slug: "announcements", name: "announcements", badge: 1 },
 ];
 
 const customChannels = ref<ChannelItem[]>([]);
 const isCreateChannelOpen = ref(false);
 const newChannelName = ref("");
 const newChannelPrivate = ref(false);
+const inviteEmailsRaw = ref("");
+const createChannelError = ref("");
+const createChannelSubmitting = ref(false);
 
 const activeChannel = computed(() => String(route.params.channelId ?? "general"));
+const activeDirectMessage = computed(() => String(route.params.memberId ?? ""));
+const currentWorkspaceRef = computed(() => String(route.params.workspaceId ?? workspace.value.id ?? ""));
 
 const channels = computed(() => [...baseChannels, ...customChannels.value]);
+const { fetchChannels, createChannel: createChannelApi, inviteMember } = useChannelApi();
 
-const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.slug || "acme"}`);
+const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.id || "acme"}`);
+const isClient = typeof window !== "undefined";
 
 const loadCustomChannels = () => {
-  if (!process.client) return;
+  if (!isClient) return;
   const raw = localStorage.getItem(workspaceStorageKey.value);
   if (!raw) {
     customChannels.value = [];
@@ -193,62 +220,115 @@ const loadCustomChannels = () => {
 };
 
 const saveCustomChannels = () => {
-  if (!process.client) return;
+  if (!isClient) return;
   localStorage.setItem(workspaceStorageKey.value, JSON.stringify(customChannels.value));
 };
-
-const toSlug = (value: string) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "") || "new-channel";
 
 const closeCreateModal = () => {
   isCreateChannelOpen.value = false;
   newChannelName.value = "";
   newChannelPrivate.value = false;
+  inviteEmailsRaw.value = "";
+  createChannelError.value = "";
+  createChannelSubmitting.value = false;
 };
 
 const createChannel = async () => {
-  const slugBase = toSlug(newChannelName.value);
-  let slug = slugBase;
-  let suffix = 2;
-  const existing = new Set(channels.value.map((channel) => channel.slug));
-
-  while (existing.has(slug)) {
-    slug = `${slugBase}-${suffix}`;
-    suffix += 1;
+  if (!workspace.value.id || workspace.value.id === "local-default") {
+    createChannelError.value = "Workspace is not ready yet. Please refresh and try again.";
+    return;
   }
 
-  const channel: ChannelItem = {
-    slug,
-    name: newChannelName.value.trim(),
-    private: newChannelPrivate.value,
-    custom: true,
-  };
+  createChannelSubmitting.value = true;
+  createChannelError.value = "";
 
-  customChannels.value = [...customChannels.value, channel];
-  saveCustomChannels();
-  closeCreateModal();
-  await navigateTo(`/workspace/${workspace.value.slug}/channel/${slug}`);
+  try {
+    const created = await createChannelApi(workspace.value.id, {
+      name: newChannelName.value.trim(),
+      type: newChannelPrivate.value ? "PRIVATE" : "PUBLIC",
+    });
+
+    const channelFromApi: ChannelItem = {
+      id: created.id,
+      slug: created.slug,
+      name: created.name,
+      private: created.private,
+      custom: true,
+    };
+
+    customChannels.value = [
+      ...customChannels.value.filter((item) => item.slug !== channelFromApi.slug),
+      channelFromApi,
+    ];
+    saveCustomChannels();
+
+    const emails = [...new Set(
+      inviteEmailsRaw.value
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean),
+    )];
+
+    for (const email of emails) {
+      try {
+        await inviteMember(workspace.value.id, created.id, email);
+      } catch {
+        // Keep channel creation successful even if one invite fails.
+      }
+    }
+
+    await refreshChannelsFromApi();
+    closeCreateModal();
+    await router.push(`/workspace/${currentWorkspaceRef.value}/channel/${created.id}`);
+    return;
+  } catch {
+    createChannelError.value = "Failed to create channel. Please try again.";
+  } finally {
+    createChannelSubmitting.value = false;
+  }
 };
 
-const goChannel = async (slug: string) => {
-  await navigateTo(`/workspace/${workspace.value.slug}/channel/${slug}`);
+const goChannel = async (channel: ChannelItem) => {
+  await router.push(`/workspace/${currentWorkspaceRef.value}/channel/${channel.id || channel.slug}`);
+};
+
+const goDirectMessage = async (person: (typeof directMessages)[number]) => {
+  await router.push(`/workspace/${currentWorkspaceRef.value}/dm/${person.id}`);
 };
 
 onMounted(() => {
   loadWorkspace();
   loadCustomChannels();
+  void refreshChannelsFromApi();
 });
 
 watch(
-  () => workspace.value.slug,
+  () => workspace.value.id,
   () => {
     loadCustomChannels();
+    void refreshChannelsFromApi();
   },
 );
+
+const refreshChannelsFromApi = async () => {
+  if (!workspace.value.id || workspace.value.id === "local-default") {
+    return;
+  }
+
+  try {
+    const fromApi = await fetchChannels(workspace.value.id);
+    const normalized: ChannelItem[] = fromApi.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      name: item.name,
+      private: item.private,
+      custom: !baseChannels.some((base) => base.name === item.name),
+    }));
+
+    customChannels.value = normalized.filter((item) => item.custom);
+    saveCustomChannels();
+  } catch {
+    // Keep local fallback for offline/degraded mode.
+  }
+};
 </script>

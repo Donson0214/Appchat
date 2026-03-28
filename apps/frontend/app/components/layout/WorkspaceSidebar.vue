@@ -88,23 +88,37 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import ChannelSidebar from "./ChannelSidebar.vue";
 import { useWorkspace } from "../../composables/use-workspace";
+import { useChannelApi } from "../../composables/use-channel-api";
 
-const { workspace, workspaceInitial, loadWorkspace, saveWorkspace } = useWorkspace();
+const { workspace, workspaces, workspaceInitial, loadWorkspace, saveWorkspace } = useWorkspace();
+const { fetchChannels } = useChannelApi();
 const router = useRouter();
 
 const isWorkspaceMenuOpen = ref(false);
 const workspaceMenuRef = ref<HTMLElement | null>(null);
 
-const workspaceOptions = [
-  { id: "local-default", name: "Acme Inc", slug: "acme", members: "47 members", roleLabel: "admin", badgeColor: "bg-indigo-500" },
-  { id: "side-project", name: "Side Project", slug: "side-project", members: "5 members", roleLabel: "member", badgeColor: "bg-emerald-500" },
-  { id: "oss-community", name: "OSS Community", slug: "oss-community", members: "312 members", roleLabel: "member", badgeColor: "bg-amber-500" },
-];
+const badgeColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500"];
 
-const selectWorkspace = async (item: (typeof workspaceOptions)[number]) => {
+const workspaceOptions = computed(() => {
+  const source = workspaces.value.length
+    ? workspaces.value
+    : [{ id: workspace.value.id, name: workspace.value.name, slug: workspace.value.slug, role: workspace.value.role }];
+
+  return source.map((item, index) => ({
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    members: "workspace",
+    roleLabel: (item.role || "member").toLowerCase(),
+    badgeColor: badgeColors[index % badgeColors.length],
+  }));
+});
+
+const selectWorkspace = async (item: (typeof workspaceOptions.value)[number]) => {
   saveWorkspace({
     id: item.id,
     name: item.name,
@@ -112,7 +126,19 @@ const selectWorkspace = async (item: (typeof workspaceOptions)[number]) => {
     createdAt: new Date().toISOString(),
   });
   isWorkspaceMenuOpen.value = false;
-  await router.push(`/workspace/${item.slug}/channel/general`);
+
+  try {
+    const channels = await fetchChannels(item.id);
+    const defaultChannel = channels.find((channel) => channel.name === "general") ?? channels[0];
+    if (defaultChannel) {
+      await router.push(`/workspace/${item.id}/channel/${defaultChannel.id}`);
+      return;
+    }
+  } catch {
+    // fallback path
+  }
+
+  await router.push(`/workspace/${item.id}/channel/general`);
 };
 
 const goCreateWorkspace = async () => {

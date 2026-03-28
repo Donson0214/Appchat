@@ -1,4 +1,4 @@
-import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};globalThis.__timing__.logStart('Load chunks/build/server');import { hasInjectionContext, inject, getCurrentInstance, defineComponent, ref, h, Suspense, Fragment, useSSRContext, createApp, provide, shallowReactive, mergeProps, onErrorCaptured, onServerPrefetch, unref, createVNode, resolveDynamicComponent, reactive, effectScope, getCurrentScope, toRef, shallowRef, isReadonly, isRef, isShallow, isReactive, toRaw } from 'vue';
+import process from 'node:process';globalThis._importMeta_=globalThis._importMeta_||{url:"file:///_entry.js",env:process.env};globalThis.__timing__.logStart('Load chunks/build/server');import { hasInjectionContext, getCurrentInstance, defineComponent, ref, inject, h, Suspense, Fragment, useSSRContext, createApp, provide, shallowReactive, mergeProps, onErrorCaptured, onServerPrefetch, unref, createVNode, resolveDynamicComponent, reactive, effectScope, getCurrentScope, toRef, shallowRef, isReadonly, isRef, isShallow, isReactive, toRaw } from 'vue';
 import { p as parseURL, l as encodePath, m as decodePath, n as hasProtocol, o as isScriptProtocol, k as joinURL, w as withQuery, q as sanitizeStatusCode, r as getContext, $ as $fetch, h as createError$1, v as executeAsync, x as defu } from '../_/nitro.mjs';
 import { b as baseURL } from '../routes/renderer.mjs';
 import { RouterView, createMemoryHistory, createRouter, START_LOCATION } from 'vue-router';
@@ -618,12 +618,17 @@ const _routes = [
   {
     name: "workspace-create",
     path: "/workspace/create",
-    component: () => import('./create-CV94unXO.mjs')
+    component: () => import('./create-Dw2KNElC.mjs')
   },
   {
     name: "workspace-workspaceId-channel-channelId",
     path: "/workspace/:workspaceId()/channel/:channelId()",
-    component: () => import('./_channelId_-D2yZ-CY1.mjs')
+    component: () => import('./_channelId_-BSHG_XGM.mjs')
+  },
+  {
+    name: "workspace-workspaceId-dm-memberId",
+    path: "/workspace/:workspaceId()/dm/:memberId()",
+    component: () => import('./_memberId_-D7y-mnxf.mjs')
   },
   {
     name: "admin",
@@ -633,7 +638,7 @@ const _routes = [
   {
     name: "app",
     path: "/app",
-    component: () => import('./app-CMuC-llA.mjs')
+    component: () => import('./app-BXP8dSsJ.mjs')
   },
   {
     name: "login",
@@ -653,12 +658,12 @@ const _routes = [
   {
     name: "sign-in",
     path: "/sign-in",
-    component: () => import('./sign-in-weYEMP9A.mjs')
+    component: () => import('./sign-in-X4fAhw1V.mjs')
   },
   {
     name: "sign-up",
     path: "/sign-up",
-    component: () => import('./sign-up-saUMzmcr.mjs')
+    component: () => import('./sign-up-CLDH01XF.mjs')
   },
   {
     name: "index",
@@ -1217,5 +1222,5 @@ let entry;
 }
 const entry_default = ((ssrContext) => entry(ssrContext));
 
-export { _export_sfc as _, useRoute as a, useRouter as b, useRuntimeConfig as c, nuxtLinkDefaults as d, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useNuxtApp as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
+export { _export_sfc as _, useRuntimeConfig as a, useRouter as b, nuxtLinkDefaults as c, entry_default as default, encodeRoutePath as e, hashMode as h, navigateTo as n, resolveRouteObject as r, useNuxtApp as u };;globalThis.__timing__.logEnd('Load chunks/build/server');
 //# sourceMappingURL=server.mjs.map

@@ -50,13 +50,57 @@ const persistAuth = (payload: AuthResponse) => {
   localStorage.setItem(USER_KEY, JSON.stringify(payload.user));
 };
 
-export const getPostAuthRedirectPath = () => {
+export const resolvePostAuthRedirectPath = async (): Promise<string> => {
   if (!process.client) {
     return "/workspace/create";
   }
 
-  const workspace = localStorage.getItem(WORKSPACE_KEY);
-  return workspace ? "/app" : "/workspace/create";
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    return "/sign-in";
+  }
+
+  const config = useRuntimeConfig();
+  const apiBaseUrl = getApiBaseUrl(config.public.apiBaseUrl);
+
+  try {
+    const list = await $fetch<Array<{ id: string; name: string; slug: string; createdAt: string; updatedAt?: string; role?: string }>>(
+      `${apiBaseUrl}/workspaces/me`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+
+    if (list.length > 0) {
+      const first = list[0];
+      localStorage.setItem(WORKSPACE_KEY, JSON.stringify(first));
+      try {
+        const channels = await $fetch<Array<{ id: string; name: string }>>(
+          `${apiBaseUrl}/workspaces/${first.id}/channels`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        const defaultChannel = channels.find((item) => item.name === "general") ?? channels[0];
+        if (defaultChannel) {
+          return `/workspace/${first.id}/channel/${defaultChannel.id}`;
+        }
+      } catch {
+        // fall back to legacy path
+      }
+
+      return `/workspace/${first.id}/channel/general`;
+    }
+  } catch {
+    // fall through to create page
+  }
+
+  return "/workspace/create";
 };
 
 export const useAuthApi = () => {

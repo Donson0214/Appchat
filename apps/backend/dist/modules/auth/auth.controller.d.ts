@@ -12,7 +12,7 @@ export declare class AuthController {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -22,7 +22,7 @@ export declare class AuthController {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
     firebase(dto: FirebaseLoginDto): Promise<{
@@ -32,7 +32,7 @@ export declare class AuthController {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
 }

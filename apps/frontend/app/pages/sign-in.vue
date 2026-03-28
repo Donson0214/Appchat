@@ -107,7 +107,7 @@ const handleEmailSignIn = async () => {
       password: password.value,
     });
 
-    await navigateTo(getPostAuthRedirectPath());
+    await navigateTo(await resolvePostAuthRedirectPath());
   } catch (error: any) {
     errorMessage.value = error?.data?.message ?? "Email sign-in failed";
   } finally {

@@ -36,13 +36,35 @@
     </div>
 
     <div class="space-y-1">
-      <MessageItem v-for="message in messages" :key="message.id" :message="message" />
+      <MessageItem
+        v-for="message in messages"
+        :key="message.id"
+        :message="message"
+        @open-thread="emit('open-thread', $event)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import MessageItem from "~/components/chat/MessageItem.vue";
+
+const emit = defineEmits<{
+  (event: "open-thread", message: {
+    id: string;
+    initials: string;
+    color: string;
+    name: string;
+    time: string;
+    pinned?: boolean;
+    text: string;
+    replies?: number;
+    lastReply?: string;
+    replyUsers?: Array<{ initials: string; color: string }>;
+    reactions?: Array<{ emoji: string; count: number }>;
+    attachment?: { name: string; size: string };
+  }): void;
+}>();
 
 defineProps<{
   channelName: string;

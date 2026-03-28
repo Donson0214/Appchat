@@ -1,0 +1,221 @@
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ChannelType, WorkspaceRole } from "@prisma/client";
+import { randomUUID } from "crypto";
+import { PrismaService } from "../../database/prisma/prisma.service";
+import { AddChannelMemberDto } from "./dto/add-channel-member.dto";
+import { CreateChannelDto } from "./dto/create-channel.dto";
+
+@Injectable()
+export class ChannelService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async listForWorkspace(workspaceRef: string, userId: string) {
+    const workspace = await this.resolveWorkspace(workspaceRef);
+    await this.requireWorkspaceMember(workspace.id, userId);
+
+    const channels = await this.prisma.channel.findMany({
+      where: {
+        workspaceId: workspace.id,
+        OR: [
+          { type: ChannelType.PUBLIC },
+          {
+            ChannelMember: {
+              some: {
+                userId,
+              },
+            },
+          },
+        ],
+      },
+      orderBy: { name: "asc" },
+      include: {
+        ChannelMember: {
+          select: { id: true },
+        },
+      },
+    });
+
+    return channels.map((channel) => ({
+      id: channel.id,
+      name: channel.name,
+      slug: channel.name,
+      description: channel.description ?? "",
+      type: channel.type,
+      private: channel.type === ChannelType.PRIVATE,
+      membersCount: channel.ChannelMember.length,
+    }));
+  }
+
+  async createInWorkspace(workspaceRef: string, userId: string, dto: CreateChannelDto) {
+    const workspace = await this.resolveWorkspace(workspaceRef);
+    await this.requireWorkspaceMember(workspace.id, userId);
+
+    const name = this.normalizeChannelName(dto.name);
+
+    const existing = await this.prisma.channel.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        name,
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException("Channel already exists");
+    }
+
+    const now = new Date();
+    const channel = await this.prisma.channel.create({
+      data: {
+        id: randomUUID(),
+        workspaceId: workspace.id,
+        name,
+        description: dto.description?.trim() || null,
+        type: dto.type ?? ChannelType.PUBLIC,
+        createdById: userId,
+        updatedAt: now,
+      },
+    });
+
+    await this.prisma.channelMember.create({
+      data: {
+        id: randomUUID(),
+        channelId: channel.id,
+        userId,
+      },
+    });
+
+    return {
+      id: channel.id,
+      name: channel.name,
+      slug: channel.name,
+      description: channel.description ?? "",
+      type: channel.type,
+      private: channel.type === ChannelType.PRIVATE,
+    };
+  }
+
+  async addMember(workspaceRef: string, channelRef: string, requesterId: string, dto: AddChannelMemberDto) {
+    const workspace = await this.resolveWorkspace(workspaceRef);
+    const requesterMembership = await this.requireWorkspaceMember(workspace.id, requesterId);
+    const channel = await this.findChannel(workspace.id, channelRef);
+
+    const email = dto.email.toLowerCase().trim();
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      create: {
+        id: randomUUID(),
+        email,
+        provider: "EMAIL",
+      },
+      update: {},
+    });
+
+    const existingWorkspaceMember = await this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: workspace.id,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (!existingWorkspaceMember) {
+      await this.prisma.workspaceMember.create({
+        data: {
+          id: randomUUID(),
+          workspaceId: workspace.id,
+          userId: user.id,
+          role: WorkspaceRole.MEMBER,
+        },
+      });
+    }
+
+    const existingChannelMember = await this.prisma.channelMember.findUnique({
+      where: {
+        channelId_userId: {
+          channelId: channel.id,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (!existingChannelMember) {
+      await this.prisma.channelMember.create({
+        data: {
+          id: randomUUID(),
+          channelId: channel.id,
+          userId: user.id,
+        },
+      });
+    }
+
+    return {
+      channel: channel.name,
+      invitedEmail: user.email,
+      invitedBy: requesterMembership.userId,
+    };
+  }
+
+  private normalizeChannelName(raw: string): string {
+    const slug = raw
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    if (!slug) {
+      throw new BadRequestException("Invalid channel name");
+    }
+
+    return slug.slice(0, 80);
+  }
+
+  private async resolveWorkspace(workspaceRef: string) {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: {
+        OR: [{ id: workspaceRef }, { slug: workspaceRef }],
+      },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException("Workspace not found");
+    }
+
+    return workspace;
+  }
+
+  private async requireWorkspaceMember(workspaceId: string, userId: string) {
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId,
+          userId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException("You are not a member of this workspace");
+    }
+
+    return membership;
+  }
+
+  private async findChannel(workspaceId: string, channelRef: string) {
+    const normalized = this.normalizeChannelName(channelRef);
+    const channel = await this.prisma.channel.findFirst({
+      where: {
+        workspaceId,
+        OR: [{ id: channelRef }, { name: normalized }],
+      },
+    });
+
+    if (!channel) {
+      throw new NotFoundException("Channel not found");
+    }
+
+    return channel;
+  }
+}
