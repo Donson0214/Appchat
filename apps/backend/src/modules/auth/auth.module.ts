@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { firebaseAdminProvider } from "./firebase/firebase-admin.provider";
 import { JwtStrategy } from "./strategies/jwt.strategy";
+import { TwilioOtpService } from "./twilio/twilio-otp.service";
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, firebaseAdminProvider],
+  providers: [AuthService, JwtStrategy, TwilioOtpService, firebaseAdminProvider],
   exports: [AuthService],
 })
 export class AuthModule {}

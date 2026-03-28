@@ -1,5 +1,6 @@
 ﻿import { Body, Controller, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
+import { SendOtpDto } from "./dto/send-otp.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { FirebaseLoginDto } from "./dto/firebase-login.dto";
@@ -21,5 +22,15 @@ export class AuthController {
   @Post("firebase")
   firebase(@Body() dto: FirebaseLoginDto) {
     return this.authService.loginWithFirebase(dto.idToken);
+  }
+
+  @Post("otp/send")
+  async sendOtp(@Body() dto: SendOtpDto) {
+    await this.authService.sendOtp(dto.phoneNumber, dto.purpose);
+    return {
+      success: true,
+      purpose: dto.purpose,
+      message: "OTP sent successfully",
+    };
   }
 }

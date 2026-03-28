@@ -15,11 +15,22 @@ type RegisterPayload = {
   fullName: string;
   email: string;
   password: string;
+  phoneNumber?: string;
+  otpCode?: string;
 };
 
 type LoginPayload = {
   email: string;
   password: string;
+  phoneNumber?: string;
+  otpCode?: string;
+};
+
+type OtpPurpose = "REGISTER" | "LOGIN";
+
+type SendOtpPayload = {
+  phoneNumber: string;
+  purpose: OtpPurpose;
 };
 
 const TOKEN_KEY = "appchat_access_token";
@@ -125,6 +136,13 @@ export const useAuthApi = () => {
     return response;
   };
 
+  const sendOtp = async (payload: SendOtpPayload): Promise<{ success: boolean; purpose: OtpPurpose; message: string }> => {
+    return $fetch(`${apiBaseUrl}/auth/otp/send`, {
+      method: "POST",
+      body: payload,
+    });
+  };
+
   const logout = () => {
     if (!process.client) {
       return;
@@ -137,6 +155,7 @@ export const useAuthApi = () => {
   return {
     registerWithEmail,
     loginWithEmail,
+    sendOtp,
     logout,
   };
 };
