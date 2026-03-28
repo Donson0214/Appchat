@@ -2,14 +2,27 @@
   <header class="relative flex h-[92px] items-center justify-between border-b border-slate-300 px-6">
     <div>
       <div class="flex items-center gap-3">
-        <h1 class="text-[28px] font-semibold leading-none tracking-[-0.015em] text-[#1D1C1D]">#{{ channel.name }}</h1>
-        <span class="pt-0.5 text-[16px] font-normal text-[#8f95a3]">{{ channel.members }} members</span>
+        <template v-if="channel.isDirectMessage">
+          <h1 class="text-[38px] font-semibold leading-none tracking-[-0.015em] text-[#1D1C1D]">{{ channel.name }}</h1>
+          <span
+            class="inline-flex h-6 items-center rounded-md bg-emerald-500 px-2.5 text-[14px] font-semibold leading-none text-white"
+          >
+            {{ channel.presenceLabel || "online" }}
+          </span>
+        </template>
+        <template v-else>
+          <h1 class="text-[28px] font-semibold leading-none tracking-[-0.015em] text-[#1D1C1D]">#{{ channel.name }}</h1>
+          <span class="pt-0.5 text-[16px] font-normal text-[#8f95a3]">{{ channel.members }} members</span>
+        </template>
       </div>
       <p class="mt-1 text-[16px] font-normal leading-6 text-[#8f95a3]">{{ channel.description }}</p>
     </div>
 
     <div class="flex items-center gap-4 text-[#64748b]">
-      <button class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[#64748b] transition-colors duration-150 hover:bg-slate-100 hover:text-[#334155]">
+      <button
+        v-if="!channel.isDirectMessage"
+        class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[#64748b] transition-colors duration-150 hover:bg-slate-100 hover:text-[#334155]"
+      >
         <svg viewBox="0 0 20 20" class="h-[15px] w-[15px] fill-current">
           <path d="M9.1 2.7c.3-.9 1.5-.9 1.8 0l1.4 3.3 3.6.3c1 .1 1.4 1.3.6 2l-2.8 2.3.9 3.5c.2 1-.8 1.7-1.7 1.2L10 13.4 6.9 15.3c-.8.5-1.9-.2-1.6-1.2l.9-3.5-2.8-2.3c-.8-.7-.4-1.9.6-2L7.6 6l1.5-3.3Z" />
         </svg>
@@ -104,14 +117,16 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from "vue";
-import NotificationPanel from "~/components/layout/NotificationPanel.vue";
+import NotificationPanel from "./NotificationPanel.vue";
 
 defineProps<{
   channel: {
     name: string;
     description: string;
-    members: number;
-    starCount: number;
+    members?: number;
+    starCount?: number;
+    isDirectMessage?: boolean;
+    presenceLabel?: string;
   };
 }>();
 

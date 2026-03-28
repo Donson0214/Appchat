@@ -11,6 +11,9 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const prisma_module_1 = require("./database/prisma/prisma.module");
 const auth_module_1 = require("./modules/auth/auth.module");
+const channel_module_1 = require("./modules/channel/channel.module");
+const message_module_1 = require("./modules/message/message.module");
+const workspace_module_1 = require("./modules/workspace/workspace.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -20,6 +23,9 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({ isGlobal: true }),
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
+            channel_module_1.ChannelModule,
+            message_module_1.MessageModule,
+            workspace_module_1.WorkspaceModule,
         ],
     })
 ], AppModule);

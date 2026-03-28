@@ -34,6 +34,7 @@
           :replies="message.replies"
           :last-reply="message.lastReply"
           :reply-users="message.replyUsers"
+          @open-thread="openThread"
         />
       </div>
     </div>
@@ -45,7 +46,12 @@
             <path d="M10 2.8a7.2 7.2 0 1 0 0 14.4 7.2 7.2 0 0 0 0-14.4Zm0 1.9a5.3 5.3 0 0 1 4.2 8.5H5.8A5.3 5.3 0 0 1 10 4.7Zm0 10.6a5.3 5.3 0 0 1-2.6-.7h5.2a5.3 5.3 0 0 1-2.6.7Zm-2-5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm4 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" />
           </svg>
         </button>
-        <button type="button" class="inline-flex h-6 w-6 items-center justify-center rounded text-[#94a3b8] hover:bg-slate-100 hover:text-[#475569]" title="Reply in thread">
+        <button
+          type="button"
+          class="inline-flex h-6 w-6 items-center justify-center rounded text-[#94a3b8] hover:bg-slate-100 hover:text-[#475569]"
+          title="Reply in thread"
+          @click="openThread"
+        >
           <svg viewBox="0 0 20 20" class="h-4 w-4 fill-current">
             <path d="M3.5 4.8A1.8 1.8 0 0 1 5.3 3h9.4a1.8 1.8 0 0 1 1.8 1.8v6.4a1.8 1.8 0 0 1-1.8 1.8H9.2l-3.6 3a.8.8 0 0 1-1.3-.6V13A1.8 1.8 0 0 1 2.5 11.2V4.8h1Z" />
           </svg>
@@ -71,7 +77,7 @@ import MessageContent from "~/components/chat/MessageContent.vue";
 import MessageMeta from "~/components/chat/MessageMeta.vue";
 import MessageReactions from "~/components/chat/MessageReactions.vue";
 
-defineProps<{
+const props = defineProps<{
   message: {
     id: string;
     initials: string;
@@ -87,4 +93,12 @@ defineProps<{
     attachment?: { name: string; size: string };
   };
 }>();
+
+const emit = defineEmits<{
+  (event: "open-thread", message: (typeof props)["message"]): void;
+}>();
+
+const openThread = () => {
+  emit("open-thread", props.message);
+};
 </script>

@@ -114,7 +114,7 @@ const handleEmailRegister = async () => {
       password: password.value,
     });
 
-    await navigateTo("/workspace/create");
+    await navigateTo(await resolvePostAuthRedirectPath());
   } catch (error: any) {
     errorMessage.value = error?.data?.message ?? "Registration failed";
   } finally {

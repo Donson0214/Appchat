@@ -6,10 +6,10 @@
 
       <main class="flex min-w-0 flex-1 flex-col">
         <AppHeader :channel="headerChannel" />
-        <ChatContainer :channel="chatChannel" />
+        <ChatContainer :channel="chatChannel" @send-message="handleSendMessage" @open-thread="handleOpenThread" />
       </main>
 
-      <RightPanel />
+      <RightPanel :is-open="isThreadPanelOpen" :thread-message="selectedThreadMessage" @close="closeThreadPanel" />
     </div>
   </div>
 </template>
@@ -20,6 +20,12 @@ import WorkspaceSidebar from "~/components/layout/WorkspaceSidebar.vue";
 import Header from "~/components/layout/Header.vue";
 import ChatContainer from "~/components/chat/ChatContainer.vue";
 import RightPanel from "~/components/layout/RightPanel.vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { io, type Socket } from "socket.io-client";
+import { useWorkspace } from "../../../../composables/use-workspace";
+import { useChannelApi } from "../../../../composables/use-channel-api";
+import { useMessageApi } from "../../../../composables/use-message-api";
 
 type ChatMessage = {
   id: string;
@@ -48,19 +54,56 @@ type ChannelView = {
   messages: ChatMessage[];
 };
 
+type ThreadMessage = {
+  id: string;
+  initials: string;
+  color: string;
+  name: string;
+  time: string;
+  text: string;
+  reactions?: Array<{ emoji: string; count: number }>;
+  replies?: number;
+};
+
+type ChannelDirectoryItem = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  membersCount: number;
+  private?: boolean;
+};
+
 const AppHeader = Header;
 
 const route = useRoute();
 const { workspace, loadWorkspace } = useWorkspace();
+const { fetchChannels } = useChannelApi();
+const { fetchMessages, sendMessage } = useMessageApi();
 
 const channelId = computed(() => String(route.params.channelId ?? "general"));
+const workspaceId = computed(() => String(route.params.workspaceId ?? workspace.value.id));
+
+const apiChannels = ref<ChannelDirectoryItem[]>([]);
+const cachedChannels = ref<ChannelDirectoryItem[]>([]);
+
+const apiMessages = ref<ChatMessage[] | null>(null);
+const socketRef = ref<Socket | null>(null);
+const activeSocketRoom = ref<string>("");
+const isThreadPanelOpen = ref(false);
+const selectedThreadMessage = ref<ThreadMessage | null>(null);
+
+const isClient = typeof window !== "undefined";
 
 onMounted(() => {
   loadWorkspace();
+  loadCachedChannels();
+  void hydrateLiveChannel();
 });
 
-useHead({
-  title: computed(() => `AppChat | ${workspace.value.slug} / #${channelId.value}`),
+watch([workspaceId, channelId], () => {
+  void hydrateLiveChannel();
+  ensureSocketRoom();
 });
 
 const channels: Record<string, ChannelView> = {
@@ -328,20 +371,236 @@ const channels: Record<string, ChannelView> = {
   },
 };
 
-const activeChannel = computed<ChannelView>(() => {
-  const key = channelId.value.toLowerCase();
-  if (channels[key]) {
-    return channels[key];
+type ResolvedChannelMeta = {
+  id: string;
+  name: string;
+  slug: string;
+  displayName: string;
+  description: string;
+  membersCount: number;
+  private?: boolean;
+};
+
+const UUID_LIKE_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const channelDirectoryStorageKey = computed(
+  () => `appchat_channel_directory_${workspaceId.value || workspace.value.id || "default"}`,
+);
+
+const normalizeRef = (value: string) => value.toLowerCase().trim();
+
+const isUuidLike = (value: string) => UUID_LIKE_REGEX.test(value);
+
+const toDisplayLabel = (rawRef: string) => {
+  const normalized = normalizeRef(rawRef);
+  if (!normalized || isUuidLike(normalized)) {
+    return "channel";
+  }
+  return normalized.replace(/-/g, " ");
+};
+
+const dedupeDirectory = (list: ChannelDirectoryItem[]) => {
+  const map = new Map<string, ChannelDirectoryItem>();
+  for (const item of list) {
+    const normalized: ChannelDirectoryItem = {
+      id: String(item.id),
+      name: normalizeRef(item.name || item.slug || item.id),
+      slug: normalizeRef(item.slug || item.name || item.id),
+      description: String(item.description || ""),
+      membersCount: Number(item.membersCount || 0),
+      private: Boolean(item.private),
+    };
+
+    const keys = [
+      `id:${normalized.id}`,
+      `slug:${normalized.slug}`,
+      `name:${normalized.name}`,
+    ];
+
+    for (const key of keys) {
+      map.set(key, normalized);
+    }
   }
 
-  const prettyName = key.replace(/-/g, " ");
-  return {
+  const unique = new Map<string, ChannelDirectoryItem>();
+  for (const item of map.values()) {
+    if (!unique.has(item.id)) {
+      unique.set(item.id, item);
+    }
+  }
+  return [...unique.values()];
+};
+
+const saveCachedChannels = (items: ChannelDirectoryItem[]) => {
+  if (!isClient) {
+    return;
+  }
+  localStorage.setItem(channelDirectoryStorageKey.value, JSON.stringify(dedupeDirectory(items)));
+};
+
+const loadCachedChannels = () => {
+  if (!isClient) {
+    return;
+  }
+  const directoryRaw = localStorage.getItem(channelDirectoryStorageKey.value);
+  const sidebarRaw = localStorage.getItem(`appchat_channels_${workspaceId.value || workspace.value.id || "acme"}`);
+
+  const source: ChannelDirectoryItem[] = [];
+
+  if (directoryRaw) {
+    try {
+      const parsed = JSON.parse(directoryRaw) as ChannelDirectoryItem[];
+      source.push(...parsed);
+    } catch {
+      // Ignore malformed cached payload.
+    }
+  }
+
+  if (sidebarRaw) {
+    try {
+      const parsed = JSON.parse(sidebarRaw) as Array<{ id?: string; slug: string; name: string; private?: boolean }>;
+      source.push(
+        ...parsed.map((item) => ({
+          id: String(item.id || item.slug || item.name),
+          name: normalizeRef(item.name || item.slug || item.id || "channel"),
+          slug: normalizeRef(item.slug || item.name || item.id || "channel"),
+          description: "",
+          membersCount: 0,
+          private: Boolean(item.private),
+        })),
+      );
+    } catch {
+      // Ignore malformed sidebar payload.
+    }
+  }
+
+  if (!source.length) {
+    cachedChannels.value = [];
+    return;
+  }
+
+  try {
+    cachedChannels.value = dedupeDirectory(source);
+  } catch {
+    cachedChannels.value = [];
+  }
+};
+
+const mergeIntoChannelCache = (items: ChannelDirectoryItem[]) => {
+  const merged = dedupeDirectory([...cachedChannels.value, ...items]);
+  cachedChannels.value = merged;
+  saveCachedChannels(merged);
+};
+
+const fallbackChannelDirectory = computed<ChannelDirectoryItem[]>(() =>
+  Object.entries(channels).map(([key, value]) => ({
+    id: key,
     name: key,
-    members: 1,
-    description: `${prettyName.charAt(0).toUpperCase()}${prettyName.slice(1)} discussions`,
+    slug: key,
+    description: value.description,
+    membersCount: value.members,
+    private: false,
+  })),
+);
+
+const findChannelMeta = (directory: ChannelDirectoryItem[], rawRef: string) => {
+  const normalized = normalizeRef(rawRef);
+  return directory.find(
+    (item) =>
+      item.id === rawRef ||
+      normalizeRef(item.slug) === normalized ||
+      normalizeRef(item.name) === normalized,
+  );
+};
+
+const resolvedChannelMeta = computed<ResolvedChannelMeta>(() => {
+  const rawRef = String(channelId.value || "");
+
+  const fromApi = findChannelMeta(apiChannels.value, rawRef);
+  if (fromApi) {
+    return {
+      id: fromApi.id,
+      name: fromApi.name,
+      slug: fromApi.slug,
+      displayName: fromApi.name,
+      description: fromApi.description || `${toDisplayLabel(fromApi.name)} discussions`,
+      membersCount: fromApi.membersCount || 1,
+      private: fromApi.private,
+    };
+  }
+
+  const fromCache = findChannelMeta(cachedChannels.value, rawRef);
+  if (fromCache) {
+    return {
+      id: fromCache.id,
+      name: fromCache.name,
+      slug: fromCache.slug,
+      displayName: fromCache.name,
+      description: fromCache.description || `${toDisplayLabel(fromCache.name)} discussions`,
+      membersCount: fromCache.membersCount || 1,
+      private: fromCache.private,
+    };
+  }
+
+  const fromFallback = findChannelMeta(fallbackChannelDirectory.value, rawRef);
+  if (fromFallback) {
+    return {
+      id: fromFallback.id,
+      name: fromFallback.name,
+      slug: fromFallback.slug,
+      displayName: fromFallback.name,
+      description: fromFallback.description || `${toDisplayLabel(fromFallback.name)} discussions`,
+      membersCount: fromFallback.membersCount || 1,
+      private: fromFallback.private,
+    };
+  }
+
+  const safeLabel = toDisplayLabel(rawRef);
+  return {
+    id: rawRef || "channel",
+    name: safeLabel,
+    slug: safeLabel.replace(/\s+/g, "-"),
+    displayName: safeLabel,
+    description: `${safeLabel.charAt(0).toUpperCase()}${safeLabel.slice(1)} discussions`,
+    membersCount: 1,
+    private: false,
+  };
+});
+
+const activeChannelKey = computed(() => {
+  const byName = normalizeRef(resolvedChannelMeta.value.name);
+  if (channels[byName]) {
+    return byName;
+  }
+  const bySlug = normalizeRef(resolvedChannelMeta.value.slug);
+  if (channels[bySlug]) {
+    return bySlug;
+  }
+  return "";
+});
+
+const activeChannel = computed<ChannelView>(() => {
+  const key = activeChannelKey.value;
+  const fallback = key ? channels[key] : undefined;
+  const resolved = resolvedChannelMeta.value;
+
+  if (fallback) {
+    return {
+      ...fallback,
+      name: resolved.displayName || fallback.name,
+      description: resolved.description || fallback.description,
+      members: resolved.membersCount ?? fallback.members,
+      messages: apiMessages.value ?? fallback.messages,
+    };
+  }
+
+  return {
+    name: resolved.displayName,
+    members: resolved.membersCount || 1,
+    description: resolved.description,
     starCount: 0,
     showWelcome: true,
-    messages: [],
+    messages: apiMessages.value ?? [],
   };
 });
 
@@ -353,4 +612,160 @@ const headerChannel = computed(() => ({
 }));
 
 const chatChannel = computed(() => activeChannel.value);
+
+useHead({
+  title: computed(() => `AppChat | ${workspace.value.name} / #${resolvedChannelMeta.value.displayName}`),
+});
+
+const colorPool = [
+  "bg-indigo-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-pink-500",
+  "bg-red-500",
+  "bg-cyan-500",
+];
+
+const nameToColor = (name: string) => {
+  const seed = name.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return colorPool[seed % colorPool.length];
+};
+
+const toInitials = (name: string) => {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+};
+
+const toUiMessage = (message: {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: { name: string };
+}): ChatMessage => {
+  const dt = new Date(message.createdAt);
+  const formattedTime = Number.isNaN(dt.valueOf())
+    ? ""
+    : dt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  return {
+    id: message.id,
+    initials: toInitials(message.author.name),
+    color: nameToColor(message.author.name),
+    name: message.author.name,
+    time: formattedTime,
+    text: message.content,
+  };
+};
+
+const upsertIncomingMessage = (ui: ChatMessage) => {
+  const list = apiMessages.value ?? [];
+  if (list.some((item) => item.id === ui.id)) {
+    return;
+  }
+  apiMessages.value = [...list, ui];
+};
+
+const hydrateLiveChannel = async () => {
+  if (!workspaceId.value || !channelId.value) {
+    return;
+  }
+
+  try {
+    const fromApi = await fetchChannels(workspaceId.value);
+    apiChannels.value = fromApi.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      description: item.description || "",
+      membersCount: item.membersCount || 0,
+      private: item.private,
+    }));
+    mergeIntoChannelCache(apiChannels.value);
+  } catch {
+    apiChannels.value = [];
+    loadCachedChannels();
+  }
+
+  try {
+    const messages = await fetchMessages(workspaceId.value, channelId.value);
+    apiMessages.value = messages.map(toUiMessage);
+  } catch {
+    apiMessages.value = null;
+  }
+};
+
+watch(
+  workspaceId,
+  () => {
+    loadCachedChannels();
+  },
+  { immediate: true },
+);
+
+const handleSendMessage = async (content: string) => {
+  try {
+    const created = await sendMessage(workspaceId.value, channelId.value, content);
+    const ui = toUiMessage(created);
+    upsertIncomingMessage(ui);
+  } catch {
+    // Keep UI responsive even if API call fails.
+  }
+};
+
+const handleOpenThread = (message: ThreadMessage) => {
+  selectedThreadMessage.value = message;
+  isThreadPanelOpen.value = true;
+};
+
+const closeThreadPanel = () => {
+  isThreadPanelOpen.value = false;
+};
+
+const ensureSocketRoom = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const config = useRuntimeConfig();
+  const base = (config.public.apiBaseUrl || "").trim() || "https://localhost:3000";
+  const room = `workspace:${workspaceId.value}:channel:${channelId.value.toLowerCase().trim()}`;
+
+  if (!socketRef.value) {
+    socketRef.value = io(`${base}/ws`, {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+
+    socketRef.value.on("message-created", (message) => {
+      const ui = toUiMessage(
+        message as {
+          id: string;
+          content: string;
+          createdAt: string;
+          author: { name: string };
+        },
+      );
+      upsertIncomingMessage(ui);
+    });
+  }
+
+  if (activeSocketRoom.value !== room) {
+    socketRef.value.emit("join-room", {
+      workspaceId: workspaceId.value,
+      channelRef: channelId.value,
+    });
+    activeSocketRoom.value = room;
+  }
+};
+
+onBeforeUnmount(() => {
+  if (socketRef.value) {
+    socketRef.value.disconnect();
+    socketRef.value = null;
+  }
+});
 </script>

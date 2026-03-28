@@ -23,8 +23,10 @@
       </div>
 
       <textarea
+        v-model="draft"
         class="h-[86px] w-full resize-none bg-transparent px-5 py-4 text-[16px] font-normal leading-7 text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none"
-        :placeholder="`Message #${channelName}`"
+        :placeholder="placeholderText"
+        @keydown.enter.exact.prevent="submit"
       />
 
       <div class="flex items-center justify-between px-4 pb-4 text-slate-400">
@@ -43,7 +45,9 @@
         </div>
 
         <button
+          type="button"
           class="inline-flex h-11 w-11 items-center justify-center rounded-md bg-indigo-300 text-[18px] text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105"
+          @click="submit"
         >
           <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
             <path d="M2.4 10.8 15.5 4c1-.5 2 .5 1.5 1.5L10.2 18.6c-.4.8-1.6.7-1.8-.2L7 12.8 1.4 11.8c-.9-.2-1.1-1.4 0-1.8Zm5.2.2.8 3.1 4.4-8.5L7.6 11Z" />
@@ -55,12 +59,35 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import { computed, ref } from "vue";
+
+const emit = defineEmits<{
+  (event: "send", content: string): void;
+}>();
+
+const props = withDefaults(
   defineProps<{
     channelName?: string;
+    isDirectMessage?: boolean;
   }>(),
   {
     channelName: "general",
+    isDirectMessage: false,
   },
 );
+
+const draft = ref("");
+const placeholderText = computed(() =>
+  props.isDirectMessage ? `Message ${props.channelName}` : `Message #${props.channelName}`,
+);
+
+const submit = () => {
+  const content = draft.value.trim();
+  if (!content) {
+    return;
+  }
+
+  emit("send", content);
+  draft.value = "";
+};
 </script>

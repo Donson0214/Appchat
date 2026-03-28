@@ -1,5 +1,5 @@
 import { signInWithPopup } from "firebase/auth";
-import { getPostAuthRedirectPath } from "./use-auth-api";
+import { resolvePostAuthRedirectPath } from "./use-auth-api";
 
 const getApiBaseUrl = (rawBaseUrl: string) => {
   const trimmed = (rawBaseUrl || "").trim();
@@ -54,7 +54,7 @@ export const useGoogleAuth = () => {
 
     return {
       response,
-      redirectTo: getPostAuthRedirectPath(),
+      redirectTo: await resolvePostAuthRedirectPath(),
     };
   };
 

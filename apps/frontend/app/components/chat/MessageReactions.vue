@@ -10,7 +10,12 @@
       <span>{{ reaction.count }}</span>
     </button>
 
-    <div v-if="replies" class="inline-flex items-center gap-1 text-[15px] leading-6">
+    <button
+      v-if="replies"
+      type="button"
+      class="inline-flex items-center gap-1 text-[15px] leading-6"
+      @click="$emit('open-thread')"
+    >
       <span
         v-for="reply in replyUsers"
         :key="reply.initials"
@@ -21,11 +26,15 @@
       </span>
       <span class="ml-1 font-semibold text-indigo-600">{{ replies }} replies</span>
       <span class="font-normal text-slate-400">{{ lastReply }}</span>
-    </div>
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
+defineEmits<{
+  (event: "open-thread"): void;
+}>();
+
 defineProps<{
   reactions?: Array<{ emoji: string; count: number }>;
   replies?: number;

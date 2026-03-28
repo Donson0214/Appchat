@@ -650,7 +650,7 @@ const _inlineRuntimeConfig = {
     }
   },
   "public": {
-    "apiBaseUrl": "http://localhost:3000",
+    "apiBaseUrl": "https://localhost:3100",
     "firebaseApiKey": "AIzaSyDm5ZZiiVVktLAF3fDZceSumnE6DUwWXXw",
     "firebaseAuthDomain": "chatapp-54276.firebaseapp.com",
     "firebaseProjectId": "chatapp-54276",
@@ -2147,16 +2147,16 @@ _wH6JrtIxmaSoA8lCPWFnE9z4lQeXW6H5z3l5aymEQw
 const assets = {
   "/index.mjs": {
     "type": "text/javascript; charset=utf-8",
-    "etag": "\"1a42f-n3rM2L57yEGs4U0KtmkHig4F0+4\"",
-    "mtime": "2026-03-27T14:24:55.695Z",
-    "size": 107567,
+    "etag": "\"1a430-hww6gnwuw2G/Xc6CSkVs/UJWl2s\"",
+    "mtime": "2026-03-27T22:45:41.421Z",
+    "size": 107568,
     "path": "index.mjs"
   },
   "/index.mjs.map": {
     "type": "application/json",
-    "etag": "\"6bb8f-34c9PrQF11ti9zj6ZEFZI0C70kc\"",
-    "mtime": "2026-03-27T14:24:55.695Z",
-    "size": 441231,
+    "etag": "\"6bb94-PxCuZ2nKfY1s1xedZMIqSp7bnrQ\"",
+    "mtime": "2026-03-27T22:45:41.435Z",
+    "size": 441236,
     "path": "index.mjs.map"
   }
 };

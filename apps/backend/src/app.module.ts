@@ -2,12 +2,18 @@
 import { ConfigModule } from "@nestjs/config";
 import { PrismaModule } from "./database/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { ChannelModule } from "./modules/channel/channel.module";
+import { MessageModule } from "./modules/message/message.module";
+import { WorkspaceModule } from "./modules/workspace/workspace.module";
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     AuthModule,
+    ChannelModule,
+    MessageModule,
+    WorkspaceModule,
   ],
 })
 export class AppModule {}

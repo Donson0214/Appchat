@@ -17,7 +17,7 @@ export declare class AuthService {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
     login(dto: LoginDto): Promise<{
@@ -27,7 +27,7 @@ export declare class AuthService {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
     loginWithFirebase(idToken: string): Promise<{
@@ -37,7 +37,7 @@ export declare class AuthService {
             email: string;
             fullName: string | null;
             avatarUrl: string | null;
-            provider: import(".prisma/client").$Enums.AuthProvider;
+            provider: import(".prisma/client").$Enums.AuthProvider | null;
         };
     }>;
     private buildAuthResponse;
