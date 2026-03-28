@@ -9,6 +9,8 @@ import { PrismaService } from "../../database/prisma/prisma.service";
 import { FIREBASE_ADMIN } from "./firebase/firebase-admin.provider";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { OtpPurpose } from "./dto/send-otp.dto";
+import { TwilioOtpService } from "./twilio/twilio-otp.service";
 
 @Injectable()
 export class AuthService {
@@ -16,10 +18,13 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly twilioOtpService: TwilioOtpService,
     @Inject(FIREBASE_ADMIN) private readonly firebaseAdmin: App,
   ) {}
 
   async register(dto: RegisterDto) {
+    await this.verifyOtpForEmailAuth(dto.phoneNumber, dto.otpCode, OtpPurpose.REGISTER);
+
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
       throw new BadRequestException("Email already in use");
@@ -39,6 +44,8 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
+    await this.verifyOtpForEmailAuth(dto.phoneNumber, dto.otpCode, OtpPurpose.LOGIN);
+
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException("Invalid credentials");
@@ -79,6 +86,27 @@ export class AuthService {
     });
 
     return this.buildAuthResponse(user);
+  }
+
+  async sendOtp(phoneNumber: string, purpose: OtpPurpose) {
+    if (!this.twilioOtpService.isEnabled()) {
+      throw new BadRequestException("OTP verification is disabled");
+    }
+
+    await this.twilioOtpService.sendOtp(phoneNumber);
+    return { purpose };
+  }
+
+  private async verifyOtpForEmailAuth(phoneNumber: string | undefined, otpCode: string | undefined, purpose: OtpPurpose) {
+    if (!this.twilioOtpService.isEnabled()) {
+      return;
+    }
+
+    if (!phoneNumber || !otpCode) {
+      throw new BadRequestException(`OTP code and phone number are required for ${purpose.toLowerCase()}`);
+    }
+
+    await this.twilioOtpService.verifyOtp(phoneNumber, otpCode);
   }
 
   private buildAuthResponse(user: User) {

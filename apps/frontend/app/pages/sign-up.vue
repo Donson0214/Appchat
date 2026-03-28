@@ -66,6 +66,31 @@
       v-model="password"
     />
 
+    <label class="mt-1 text-[15px] font-medium leading-tight text-slate-900">Phone number</label>
+    <input
+      class="h-[40px] w-full rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15"
+      type="tel"
+      placeholder="+639171234567"
+      v-model="phoneNumber"
+    />
+
+    <div class="mt-1 flex items-center gap-2">
+      <input
+        class="h-[40px] flex-1 rounded-md border border-slate-300 bg-slate-50 px-3.5 text-[16px] text-slate-900 outline-none transition-all duration-200 ease-in-out placeholder:text-slate-400 focus:border-indigo-300 focus:bg-white focus:ring-2 focus:ring-indigo-500/15"
+        type="text"
+        placeholder="OTP code"
+        v-model="otpCode"
+      />
+      <button
+        class="h-[40px] shrink-0 rounded-md border border-slate-300 bg-white px-3.5 text-[14px] font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        type="button"
+        :disabled="otpLoading"
+        @click="handleSendOtp"
+      >
+        {{ otpLoading ? "Sending..." : "Send OTP" }}
+      </button>
+    </div>
+
     <button
       class="mt-2 h-[40px] w-full rounded-md bg-gradient-to-r from-indigo-500 to-indigo-600 text-[16px] font-semibold text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105 hover:shadow-[0_8px_16px_rgba(99,102,241,0.24)] active:translate-y-0 active:shadow-[0_3px_8px_rgba(99,102,241,0.20)]"
       type="button"
@@ -82,12 +107,15 @@ import AuthLayout from "../components/auth/AuthLayout.vue";
 
 const googleLoading = ref(false);
 const submitLoading = ref(false);
+const otpLoading = ref(false);
 const errorMessage = ref("");
 const fullName = ref("");
 const email = ref("");
 const password = ref("");
+const phoneNumber = ref("");
+const otpCode = ref("");
 const { signInWithGoogle } = useGoogleAuth();
-const { registerWithEmail } = useAuthApi();
+const { registerWithEmail, sendOtp } = useAuthApi();
 
 const handleGoogleSignIn = async () => {
   try {
@@ -112,6 +140,8 @@ const handleEmailRegister = async () => {
       fullName: fullName.value.trim(),
       email: email.value.trim().toLowerCase(),
       password: password.value,
+      phoneNumber: phoneNumber.value.trim(),
+      otpCode: otpCode.value.trim(),
     });
 
     await navigateTo(await resolvePostAuthRedirectPath());
@@ -119,6 +149,21 @@ const handleEmailRegister = async () => {
     errorMessage.value = error?.data?.message ?? "Registration failed";
   } finally {
     submitLoading.value = false;
+  }
+};
+
+const handleSendOtp = async () => {
+  try {
+    otpLoading.value = true;
+    errorMessage.value = "";
+    await sendOtp({
+      phoneNumber: phoneNumber.value.trim(),
+      purpose: "REGISTER",
+    });
+  } catch (error: any) {
+    errorMessage.value = error?.data?.message ?? "Failed to send OTP";
+  } finally {
+    otpLoading.value = false;
   }
 };
 </script>
