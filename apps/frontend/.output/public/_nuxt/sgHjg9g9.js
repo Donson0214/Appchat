@@ -1,1 +1,0 @@
-import{d as r,M as a,e as s}from"./BoH86aim.js";import{r as o}from"./CWLkh3Sv.js";const i=r({__name:"app",async setup(n){let e,t;return[e,t]=a(async()=>s(([e,t]=a(()=>o()),e=await e,t(),e),{replace:!0})),await e,t(),()=>{}}});export{i as default};

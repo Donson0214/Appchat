@@ -1,2 +1,11 @@
 node_modules/
 .env
+
+# Backend build output
+apps/backend/dist/
+apps/backend/*.tsbuildinfo
+apps/backend/**/tsconfig.tsbuildinfo
+
+# Nuxt generated artifacts
+apps/frontend/.nuxt/
+apps/frontend/.output/

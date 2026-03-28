@@ -1,1 +1,0 @@
-import{d as s,M as a,e as o}from"./BoH86aim.js";import{r as n}from"./CWLkh3Sv.js";const _=s({__name:"index",async setup(r){let e,t;return localStorage.getItem("appchat_access_token")?([e,t]=a(async()=>o(([e,t]=a(()=>n()),e=await e,t(),e),{replace:!0})),await e,t()):([e,t]=a(()=>o("/sign-in",{replace:!0})),await e,t()),()=>{}}});export{_ as default};
