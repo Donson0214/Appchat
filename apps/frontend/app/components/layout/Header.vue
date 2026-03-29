@@ -5,9 +5,10 @@
         <template v-if="channel.isDirectMessage">
           <h1 class="text-[38px] font-semibold leading-none tracking-[-0.015em] text-[#1D1C1D]">{{ channel.name }}</h1>
           <span
-            class="inline-flex h-6 items-center rounded-md bg-emerald-500 px-2.5 text-[14px] font-semibold leading-none text-white"
+            class="inline-flex h-6 items-center rounded-md px-2.5 text-[14px] font-semibold leading-none text-white"
+            :class="statusBadgeClass(channel.presenceLabel)"
           >
-            {{ channel.presenceLabel || "online" }}
+            {{ channel.presenceLabel || "offline" }}
           </span>
         </template>
         <template v-else>
@@ -141,6 +142,19 @@ const notificationButtonRef = ref<HTMLElement | null>(null);
 
 const toggleNotifications = () => {
   isNotificationOpen.value = !isNotificationOpen.value;
+};
+
+const statusBadgeClass = (status?: string) => {
+  switch ((status || "offline").toLowerCase()) {
+    case "online":
+      return "bg-emerald-500";
+    case "away":
+      return "bg-amber-500";
+    case "dnd":
+      return "bg-red-500";
+    default:
+      return "bg-slate-500";
+  }
 };
 
 const openSearch = () => {

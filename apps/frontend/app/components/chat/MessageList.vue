@@ -41,6 +41,9 @@
         :key="message.id"
         :message="message"
         @open-thread="emit('open-thread', $event)"
+        @mention-click="emit('mention-click', $event)"
+        @toggle-reaction="emit('toggle-reaction', $event)"
+        @toggle-pin="emit('toggle-pin', $event)"
       />
     </div>
   </div>
@@ -52,18 +55,24 @@ import MessageItem from "~/components/chat/MessageItem.vue";
 const emit = defineEmits<{
   (event: "open-thread", message: {
     id: string;
+    parentMessageId?: string | null;
     initials: string;
     color: string;
+    authorId?: string;
     name: string;
     time: string;
     pinned?: boolean;
     text: string;
+    mentions?: Array<{ userId: string | null; displayName: string; mentionKey: string; start: number; end: number }>;
     replies?: number;
     lastReply?: string;
     replyUsers?: Array<{ initials: string; color: string }>;
-    reactions?: Array<{ emoji: string; count: number }>;
+    reactions?: Array<{ emoji: string; count: number; reactedByMe?: boolean }>;
     attachment?: { name: string; size: string };
   }): void;
+  (event: "mention-click", mention: { userId: string | null; displayName: string; mentionKey: string }): void;
+  (event: "toggle-reaction", payload: { messageId: string; emoji: string }): void;
+  (event: "toggle-pin", messageId: string): void;
 }>();
 
 defineProps<{
@@ -75,16 +84,19 @@ defineProps<{
   topReactions?: Array<{ emoji: string; count: number }>;
   messages: Array<{
     id: string;
+    parentMessageId?: string | null;
     initials: string;
     color: string;
+    authorId?: string;
     name: string;
     time: string;
     pinned?: boolean;
     text: string;
+    mentions?: Array<{ userId: string | null; displayName: string; mentionKey: string; start: number; end: number }>;
     replies?: number;
     lastReply?: string;
     replyUsers?: Array<{ initials: string; color: string }>;
-    reactions?: Array<{ emoji: string; count: number }>;
+    reactions?: Array<{ emoji: string; count: number; reactedByMe?: boolean }>;
     attachment?: { name: string; size: string };
   }>;
 }>();

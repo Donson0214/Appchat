@@ -22,6 +22,15 @@
     <p v-if="sidebarError" class="mt-3 rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-700">
       {{ sidebarError }}
     </p>
+    <p v-if="realtimePresenceError" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs text-amber-700">
+      {{ realtimePresenceError }}
+    </p>
+    <p v-else-if="connectionState === 'connecting'" class="mt-2 px-2.5 text-xs text-slate-500">
+      Reconnecting presence...
+    </p>
+    <p v-if="unreadRealtimeError" class="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs text-amber-700">
+      {{ unreadRealtimeError }}
+    </p>
 
     <div class="mt-5">
       <p class="mb-1.5 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-[#64748b]">
@@ -151,20 +160,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { io, type Socket } from "socket.io-client";
 import Avatar from "../ui/Avatar.vue";
 import Badge from "../ui/Badge.vue";
 import { useWorkspace } from "../../composables/use-workspace";
 import { useChannelApi } from "../../composables/use-channel-api";
-import { usePresenceApi } from "../../composables/use-presence-api";
+import { type PresenceStatus, usePresenceApi } from "../../composables/use-presence-api";
+import { usePresenceRealtime } from "../../composables/use-presence-realtime";
 import { useDmApi } from "../../composables/use-dm-api";
+import { getValidAccessToken } from "../../utils/auth-session";
 
 const route = useRoute();
 const router = useRouter();
 const { workspace, loadWorkspace } = useWorkspace();
 const { fetchChannels, createChannel: createChannelApi, inviteMember } = useChannelApi();
 const { fetchWorkspacePresence } = usePresenceApi();
+const { connect: connectPresence, subscribeWorkspace, onPresenceChanged, connectionError, connectionState } = usePresenceRealtime();
 const { openDirectMessage } = useDmApi();
 
 type ChannelItem = {
@@ -172,8 +185,8 @@ type ChannelItem = {
   slug: string;
   name: string;
   private?: boolean;
-  badge?: number;
-  custom?: boolean;
+  unreadCount: number;
+  badge: number | null;
 };
 
 type DirectMessageItem = {
@@ -181,15 +194,11 @@ type DirectMessageItem = {
   name: string;
   initials: string;
   color: string;
+  status: PresenceStatus;
   statusColor: string;
 };
 
-const baseChannels: ChannelItem[] = [
-  { id: "general", slug: "general", name: "general" },
-  { id: "announcements", slug: "announcements", name: "announcements" },
-];
-
-const customChannels = ref<ChannelItem[]>([]);
+const channels = ref<ChannelItem[]>([]);
 const directMessages = ref<DirectMessageItem[]>([]);
 const sidebarError = ref("");
 
@@ -199,16 +208,28 @@ const newChannelPrivate = ref(false);
 const inviteEmailsRaw = ref("");
 const createChannelError = ref("");
 const createChannelSubmitting = ref(false);
+const realtimePresenceError = ref("");
+const unreadRealtimeError = ref("");
+let removePresenceListener: (() => void) | null = null;
+const unreadSocketRef = ref<Socket | null>(null);
 
-const activeChannel = computed(() => String(route.params.channelId ?? "general"));
-const activeDirectMessage = computed(() => String(route.params.memberId ?? ""));
+const currentRoutePath = computed(() => String((route as { path?: string; fullPath?: string }).path ?? (route as { fullPath?: string }).fullPath ?? ""));
+
+const activeChannel = computed(() => {
+  if (!currentRoutePath.value.includes("/channel/")) {
+    return "";
+  }
+  return String(route.params.channelId ?? "");
+});
+const activeDirectMessage = computed(() => {
+  if (!currentRoutePath.value.includes("/dm/")) {
+    return "";
+  }
+  return String(route.params.memberId ?? "");
+});
 const currentWorkspaceRef = computed(() => String(route.params.workspaceId ?? workspace.value.id ?? ""));
-const channels = computed(() => [...baseChannels, ...customChannels.value]);
 
-const isClient = typeof window !== "undefined";
-const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.id || "workspace"}`);
-
-const statusToDot = (status: string) => {
+const statusToDot = (status: PresenceStatus) => {
   switch (status) {
     case "online":
       return "bg-emerald-500";
@@ -219,6 +240,18 @@ const statusToDot = (status: string) => {
     default:
       return "bg-slate-400";
   }
+};
+
+const applyPresenceUpdate = (userId: string, status: PresenceStatus) => {
+  directMessages.value = directMessages.value.map((member) =>
+    member.id === userId
+      ? {
+          ...member,
+          status,
+          statusColor: statusToDot(status),
+        }
+      : member,
+  );
 };
 
 const palette = ["bg-pink-500", "bg-emerald-500", "bg-amber-500", "bg-indigo-500", "bg-cyan-500"];
@@ -236,30 +269,14 @@ const initialsFor = (name: string) =>
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 
-const loadCachedChannels = () => {
-  if (!isClient) {
-    return;
-  }
-
-  const raw = localStorage.getItem(workspaceStorageKey.value);
-  if (!raw) {
-    customChannels.value = [];
-    return;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as ChannelItem[];
-    customChannels.value = parsed.filter((item) => item.custom);
-  } catch {
-    customChannels.value = [];
-  }
-};
-
-const saveCachedChannels = () => {
-  if (!isClient) {
-    return;
-  }
-  localStorage.setItem(workspaceStorageKey.value, JSON.stringify(customChannels.value));
+const sortChannelsByPrivacy = (items: ChannelItem[]) => {
+  return [...items].sort((a, b) => {
+    const privacyRank = Number(Boolean(a.private)) - Number(Boolean(b.private));
+    if (privacyRank !== 0) {
+      return privacyRank;
+    }
+    return a.name.localeCompare(b.name);
+  });
 };
 
 const closeCreateModal = () => {
@@ -292,14 +309,13 @@ const createChannel = async () => {
       slug: created.slug,
       name: created.name,
       private: created.private,
-      custom: true,
+      unreadCount: 0,
+      badge: null,
     };
-
-    customChannels.value = [
-      ...customChannels.value.filter((item) => item.slug !== channelFromApi.slug),
+    channels.value = sortChannelsByPrivacy([
+      ...channels.value.filter((item) => item.id !== channelFromApi.id && item.slug !== channelFromApi.slug),
       channelFromApi,
-    ];
-    saveCachedChannels();
+    ]);
 
     const emails = [
       ...new Set(
@@ -324,7 +340,32 @@ const createChannel = async () => {
   }
 };
 
+const setChannelUnread = (matcher: (item: ChannelItem) => boolean, unreadCount: number) => {
+  const index = channels.value.findIndex(matcher);
+  if (index < 0) {
+    return;
+  }
+
+  const current = channels.value[index];
+  if (current.unreadCount === unreadCount && current.badge === (unreadCount > 0 ? unreadCount : null)) {
+    return;
+  }
+
+  channels.value[index] = {
+    ...current,
+    unreadCount,
+    badge: unreadCount > 0 ? unreadCount : null,
+  };
+};
+
 const goChannel = async (channel: ChannelItem) => {
+  const targetRef = String(channel.id || channel.slug);
+  if (targetRef === activeChannel.value) {
+    return;
+  }
+
+  // Clear only the selected channel badge immediately without remapping the full list.
+  setChannelUnread((item) => item.id === channel.id || item.slug === channel.slug, 0);
   await router.push(`/workspace/${currentWorkspaceRef.value}/channel/${channel.id || channel.slug}`);
 };
 
@@ -344,16 +385,16 @@ const refreshChannelsFromApi = async () => {
   }
 
   const fromApi = await fetchChannels(workspace.value.id);
-  const normalized: ChannelItem[] = fromApi.map((item) => ({
-    id: item.id,
-    slug: item.slug,
-    name: item.name,
-    private: item.private,
-    custom: !baseChannels.some((base) => base.name === item.name),
-  }));
-
-  customChannels.value = normalized.filter((item) => item.custom);
-  saveCachedChannels();
+  channels.value = sortChannelsByPrivacy(
+    fromApi.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      name: item.name,
+      private: item.private,
+      unreadCount: item.unreadCount || 0,
+      badge: item.unreadCount > 0 ? item.unreadCount : null,
+    })),
+  );
 };
 
 const refreshDirectMessages = async () => {
@@ -370,13 +411,15 @@ const refreshDirectMessages = async () => {
       name: member.name,
       initials: initialsFor(member.name),
       color: nameColor(member.name),
+      status: member.status,
       statusColor: statusToDot(member.status),
     }));
 };
 
 const refreshSidebarData = async () => {
   sidebarError.value = "";
-  loadCachedChannels();
+  realtimePresenceError.value = "";
+  unreadRealtimeError.value = "";
 
   try {
     await Promise.all([refreshChannelsFromApi(), refreshDirectMessages()]);
@@ -385,15 +428,101 @@ const refreshSidebarData = async () => {
   }
 };
 
+const ensurePresenceRealtime = async () => {
+  if (!workspace.value.id || workspace.value.id === "workspace-default") {
+    return;
+  }
+
+  try {
+    connectPresence();
+    await subscribeWorkspace(workspace.value.id);
+    realtimePresenceError.value = "";
+  } catch (error) {
+    realtimePresenceError.value = error instanceof Error ? error.message : "Presence realtime is unavailable.";
+  }
+};
+
+const ensureUnreadRealtime = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (!workspace.value.id || workspace.value.id === "workspace-default") {
+    return;
+  }
+
+  const token = getValidAccessToken();
+  if (!token) {
+    return;
+  }
+
+  if (unreadSocketRef.value) {
+    return;
+  }
+
+  const config = useRuntimeConfig();
+  const base = (config.public.apiBaseUrl || "").trim() || "https://localhost:3000";
+  unreadSocketRef.value = io(`${base}/ws`, {
+    transports: ["websocket"],
+    withCredentials: true,
+    auth: { token },
+    extraHeaders: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  unreadSocketRef.value.on("connect_error", () => {
+    unreadRealtimeError.value = "Unread badge realtime is unavailable.";
+  });
+
+  unreadSocketRef.value.on(
+    "unread-updated",
+    (payload: { workspaceId: string; channelId: string; unreadCount: number }) => {
+      if (payload.workspaceId !== workspace.value.id) {
+        return;
+      }
+
+      setChannelUnread((item) => item.id === payload.channelId, payload.unreadCount);
+    },
+  );
+};
+
 onMounted(async () => {
   await loadWorkspace();
   await refreshSidebarData();
+  await ensurePresenceRealtime();
+  ensureUnreadRealtime();
+  removePresenceListener = onPresenceChanged((event) => {
+    applyPresenceUpdate(event.userId, event.status);
+  });
 });
 
 watch(
   () => workspace.value.id,
   async () => {
     await refreshSidebarData();
+    await ensurePresenceRealtime();
+    if (unreadSocketRef.value) {
+      unreadSocketRef.value.disconnect();
+      unreadSocketRef.value = null;
+    }
+    ensureUnreadRealtime();
   },
 );
+
+watch(connectionError, (value) => {
+  if (value) {
+    realtimePresenceError.value = value;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (removePresenceListener) {
+    removePresenceListener();
+    removePresenceListener = null;
+  }
+  if (unreadSocketRef.value) {
+    unreadSocketRef.value.disconnect();
+    unreadSocketRef.value = null;
+  }
+});
 </script>

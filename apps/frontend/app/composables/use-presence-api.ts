@@ -40,7 +40,7 @@ export const usePresenceApi = () => {
       });
     } catch (error) {
       await handleUnauthorizedError(error);
-      return { ok: false };
+      throw error;
     }
   };
 

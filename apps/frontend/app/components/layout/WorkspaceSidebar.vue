@@ -21,8 +21,25 @@
 
       <div
         v-if="isWorkspaceMenuOpen"
-        class="absolute left-4 top-[72px] z-50 w-[220px] overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]"
+        class="absolute left-4 top-[72px] z-50 w-[280px] overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]"
       >
+        <div class="border-b border-slate-200 px-3 py-2">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Invite code</p>
+          <div class="mt-1 flex items-center justify-between gap-2 rounded-md bg-slate-100 px-2 py-1.5">
+            <span class="truncate font-mono text-[12px] font-semibold text-slate-800">
+              {{ activeInviteCode || "Admin-only" }}
+            </span>
+            <button
+              type="button"
+              class="rounded-md px-2 py-1 text-[11px] font-semibold text-indigo-600 transition-colors duration-150 hover:bg-indigo-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              :disabled="!activeInviteCode"
+              @click.stop="copyInviteCode(activeInviteCode)"
+            >
+              Copy
+            </button>
+          </div>
+          <p v-if="inviteCopyStatus" class="mt-1 text-[11px] text-emerald-600">{{ inviteCopyStatus }}</p>
+        </div>
         <div class="p-2">
           <button
             v-for="item in workspaceOptions"
@@ -40,9 +57,48 @@
                 <p class="mt-0.5 text-[12px] text-slate-400">{{ item.members }} - {{ item.roleLabel }}</p>
               </div>
             </div>
-            <svg v-if="workspace.slug === item.slug" viewBox="0 0 20 20" class="h-4 w-4 fill-indigo-500">
-              <path d="M15.8 6.2a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4 0l-3-3a1 1 0 0 1 1.4-1.4L9 11.4l5.3-5.2a1 1 0 0 1 1.4 0Z" />
-            </svg>
+            <div class="relative ml-2 flex items-center gap-1">
+              <svg v-if="workspace.slug === item.slug" viewBox="0 0 20 20" class="h-4 w-4 fill-indigo-500">
+                <path d="M15.8 6.2a1 1 0 0 1 0 1.4l-6 6a1 1 0 0 1-1.4 0l-3-3a1 1 0 0 1 1.4-1.4L9 11.4l5.3-5.2a1 1 0 0 1 1.4 0Z" />
+              </svg>
+              <button
+                type="button"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors duration-150 hover:bg-slate-200/70 hover:text-slate-600"
+                @click.stop="toggleActions(item.id)"
+              >
+                <svg viewBox="0 0 20 20" class="h-4 w-4 fill-current">
+                  <path d="M4.5 8.8a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Zm5.5 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Zm5.5 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z" />
+                </svg>
+              </button>
+              <div
+                v-if="actionWorkspaceId === item.id"
+                class="absolute right-0 top-8 z-50 w-[170px] rounded-md border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.2)]"
+              >
+                <button
+                  type="button"
+                  class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-[12px] font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50"
+                  @click.stop="selectWorkspace(item)"
+                >
+                  Switch workspace
+                </button>
+                <button
+                  type="button"
+                  class="flex w-full items-center rounded-md px-2 py-1.5 text-left text-[12px] font-medium transition-colors duration-150"
+                  :class="item.inviteCode ? 'text-indigo-600 hover:bg-indigo-50' : 'cursor-not-allowed text-slate-400'"
+                  :disabled="!item.inviteCode"
+                  @click.stop="copyInviteCode(item.inviteCode)"
+                >
+                  Copy invite code
+                </button>
+                <button
+                  type="button"
+                  class="mt-1 flex w-full items-center rounded-md px-2 py-1.5 text-left text-[12px] font-medium text-slate-700 transition-colors duration-150 hover:bg-slate-50"
+                  @click.stop="goCreateWorkspace"
+                >
+                  Create or join
+                </button>
+              </div>
+            </div>
           </button>
         </div>
         <div class="border-t border-slate-200 p-2">
@@ -99,14 +155,24 @@ const { fetchChannels } = useChannelApi();
 const router = useRouter();
 
 const isWorkspaceMenuOpen = ref(false);
+const actionWorkspaceId = ref<string | null>(null);
 const workspaceMenuRef = ref<HTMLElement | null>(null);
+const inviteCopyStatus = ref("");
 
 const badgeColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500"];
 
 const workspaceOptions = computed(() => {
   const source = workspaces.value.length
     ? workspaces.value
-    : [{ id: workspace.value.id, name: workspace.value.name, slug: workspace.value.slug, role: workspace.value.role }];
+    : [
+        {
+          id: workspace.value.id,
+          name: workspace.value.name,
+          slug: workspace.value.slug,
+          role: workspace.value.role,
+          inviteCode: workspace.value.inviteCode,
+        },
+      ];
 
   return source.map((item, index) => ({
     id: item.id,
@@ -114,8 +180,14 @@ const workspaceOptions = computed(() => {
     slug: item.slug,
     members: "workspace",
     roleLabel: (item.role || "member").toLowerCase(),
+    inviteCode: item.inviteCode ?? null,
     badgeColor: badgeColors[index % badgeColors.length],
   }));
+});
+
+const activeInviteCode = computed(() => {
+  const active = workspaceOptions.value.find((item) => item.id === workspace.value.id || item.slug === workspace.value.slug);
+  return active?.inviteCode || null;
 });
 
 const selectWorkspace = async (item: (typeof workspaceOptions.value)[number]) => {
@@ -124,8 +196,10 @@ const selectWorkspace = async (item: (typeof workspaceOptions.value)[number]) =>
     name: item.name,
     slug: item.slug,
     createdAt: new Date().toISOString(),
+    inviteCode: item.inviteCode ?? undefined,
   });
   isWorkspaceMenuOpen.value = false;
+  actionWorkspaceId.value = null;
 
   try {
     const channels = await fetchChannels(item.id);
@@ -143,6 +217,7 @@ const selectWorkspace = async (item: (typeof workspaceOptions.value)[number]) =>
 
 const goCreateWorkspace = async () => {
   isWorkspaceMenuOpen.value = false;
+  actionWorkspaceId.value = null;
   await router.push("/workspace/create");
 };
 
@@ -155,11 +230,40 @@ const goAdmin = async () => {
 };
 
 const handleOutsideClick = (event: MouseEvent) => {
-  if (!isWorkspaceMenuOpen.value) return;
+  if (!isWorkspaceMenuOpen.value && !actionWorkspaceId.value) return;
   const target = event.target as Node | null;
   if (!target) return;
   if (workspaceMenuRef.value && !workspaceMenuRef.value.contains(target)) {
     isWorkspaceMenuOpen.value = false;
+    actionWorkspaceId.value = null;
+  }
+};
+
+const toggleActions = (workspaceId: string) => {
+  actionWorkspaceId.value = actionWorkspaceId.value === workspaceId ? null : workspaceId;
+};
+
+const copyInviteCode = async (code: string | null) => {
+  if (!code) {
+    inviteCopyStatus.value = "Invite code is available for admins only.";
+    return;
+  }
+
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      await navigator.clipboard.writeText(code);
+      inviteCopyStatus.value = `Copied ${code}`;
+    } else {
+      inviteCopyStatus.value = code;
+    }
+    actionWorkspaceId.value = null;
+    setTimeout(() => {
+      if (inviteCopyStatus.value.startsWith("Copied")) {
+        inviteCopyStatus.value = "";
+      }
+    }, 1800);
+  } catch {
+    inviteCopyStatus.value = "Unable to copy invite code right now.";
   }
 };
 

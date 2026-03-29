@@ -43,6 +43,7 @@ export class MessageGateway implements OnGatewayConnection {
         secret: this.configService.get<string>("JWT_SECRET") ?? "",
       });
       client.data.userId = payload.sub;
+      client.join(this.userRoom(payload.sub));
     } catch {
       client.disconnect(true);
     }
@@ -77,8 +78,46 @@ export class MessageGateway implements OnGatewayConnection {
     this.server.to(room).emit("message-created", message);
   }
 
+  emitUnreadCountForUser(userId: string, payload: { workspaceId: string; channelId: string; unreadCount: number }) {
+    this.server.to(this.userRoom(userId)).emit("unread-updated", payload);
+  }
+
+  emitThreadReplyCreated(
+    workspaceId: string,
+    channelRef: string,
+    rootMessageId: string,
+    reply: unknown,
+  ) {
+    const room = this.roomFor(workspaceId, channelRef);
+    this.server.to(room).emit("thread:reply-created", { rootMessageId, reply });
+  }
+
+  emitReactionUpdated(
+    workspaceId: string,
+    channelRef: string,
+    payload: { messageId: string; reactions: Array<{ emoji: string; count: number; reactedByMe: boolean }> },
+  ) {
+    const room = this.roomFor(workspaceId, channelRef);
+    this.server.to(room).emit("message:reaction-updated", payload);
+  }
+
+  emitMessagePinned(
+    workspaceId: string,
+    channelRef: string,
+    payload: { messageId: string; pinned: boolean },
+  ) {
+    const room = this.roomFor(workspaceId, channelRef);
+    this.server
+      .to(room)
+      .emit(payload.pinned ? "message:pinned" : "message:unpinned", payload);
+  }
+
   private roomFor(workspaceId: string, channelRef: string) {
     return `workspace:${workspaceId}:channel:${channelRef.toLowerCase().trim()}`;
+  }
+
+  private userRoom(userId: string) {
+    return `user:${userId}`;
   }
 
   private extractToken(client: Socket): string | null {

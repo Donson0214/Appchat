@@ -6,6 +6,10 @@ describe("MessageContent", () => {
     const wrapper = mount(MessageContent, {
       props: {
         text: "Great work @alex and @channel",
+        mentions: [
+          { userId: "u-1", displayName: "alex", mentionKey: "alex", start: 11, end: 16 },
+          { userId: null, displayName: "channel", mentionKey: "channel", start: 21, end: 29 },
+        ],
       },
     });
 

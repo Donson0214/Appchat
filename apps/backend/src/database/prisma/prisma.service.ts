@@ -41,6 +41,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       CREATE TABLE IF NOT EXISTS "User" (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
+        name TEXT,
         "fullName" TEXT,
         "avatarUrl" TEXT,
         "passwordHash" TEXT,
@@ -52,6 +53,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     await this.$executeRawUnsafe(`
       ALTER TABLE "User"
+      ADD COLUMN IF NOT EXISTS name TEXT,
       ADD COLUMN IF NOT EXISTS "fullName" TEXT,
       ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT,
       ADD COLUMN IF NOT EXISTS "passwordHash" TEXT,
@@ -178,7 +180,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         id TEXT PRIMARY KEY,
         "channelId" TEXT NOT NULL REFERENCES "Channel"(id) ON DELETE CASCADE,
         "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        "parentMessageId" TEXT REFERENCES "Message"(id) ON DELETE CASCADE,
         content TEXT NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await this.$executeRawUnsafe(`
+      ALTER TABLE "Message"
+      ADD COLUMN IF NOT EXISTS "parentMessageId" TEXT REFERENCES "Message"(id) ON DELETE CASCADE;
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ChannelReadState" (
+        id TEXT PRIMARY KEY,
+        "channelId" TEXT NOT NULL REFERENCES "Channel"(id) ON DELETE CASCADE,
+        "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        "lastReadAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -210,6 +229,27 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "readAt" TIMESTAMP(3)
+      );
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "MessageReaction" (
+        id TEXT PRIMARY KEY,
+        "messageId" TEXT NOT NULL REFERENCES "Message"(id) ON DELETE CASCADE,
+        "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        emoji TEXT NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "PinnedMessage" (
+        id TEXT PRIMARY KEY,
+        "workspaceId" TEXT NOT NULL REFERENCES "Workspace"(id) ON DELETE CASCADE,
+        "channelId" TEXT NOT NULL REFERENCES "Channel"(id) ON DELETE CASCADE,
+        "messageId" TEXT NOT NULL REFERENCES "Message"(id) ON DELETE CASCADE,
+        "pinnedById" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
@@ -257,7 +297,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     `);
 
     await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "Message_parentMessageId_createdAt_idx" ON "Message"("parentMessageId","createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "Message_userId_idx" ON "Message"("userId");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "ChannelReadState_channelId_userId_key"
+      ON "ChannelReadState"("channelId","userId");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "ChannelReadState_userId_updatedAt_idx"
+      ON "ChannelReadState"("userId","updatedAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "ChannelReadState_channelId_updatedAt_idx"
+      ON "ChannelReadState"("channelId","updatedAt");
     `);
 
     await this.$executeRawUnsafe(`
@@ -282,6 +341,36 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "Notification_workspaceId_channelId_createdAt_idx"
       ON "Notification"("workspaceId", "channelId", "createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "MessageReaction_messageId_userId_emoji_key"
+      ON "MessageReaction"("messageId","userId","emoji");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "MessageReaction_messageId_createdAt_idx"
+      ON "MessageReaction"("messageId","createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "MessageReaction_userId_createdAt_idx"
+      ON "MessageReaction"("userId","createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "PinnedMessage_channelId_messageId_key"
+      ON "PinnedMessage"("channelId","messageId");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "PinnedMessage_workspaceId_channelId_createdAt_idx"
+      ON "PinnedMessage"("workspaceId","channelId","createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "PinnedMessage_pinnedById_createdAt_idx"
+      ON "PinnedMessage"("pinnedById","createdAt");
     `);
   }
 }

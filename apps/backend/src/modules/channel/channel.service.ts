@@ -2,12 +2,16 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { ChannelType, WorkspaceRole } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../../database/prisma/prisma.service";
+import { MessageGateway } from "../message/message.gateway";
 import { AddChannelMemberDto } from "./dto/add-channel-member.dto";
 import { CreateChannelDto } from "./dto/create-channel.dto";
 
 @Injectable()
 export class ChannelService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly messageGateway: MessageGateway,
+  ) {}
 
   async listForWorkspace(workspaceRef: string, userId: string) {
     const workspace = await this.resolveWorkspace(workspaceRef);
@@ -40,6 +44,34 @@ export class ChannelService {
       },
     });
 
+    const channelIds = channels.map((channel) => channel.id);
+    const readStates = await this.prisma.channelReadState.findMany({
+      where: {
+        userId,
+        channelId: { in: channelIds },
+      },
+      select: {
+        channelId: true,
+        lastReadAt: true,
+      },
+    });
+    const readByChannelId = new Map(readStates.map((item) => [item.channelId, item.lastReadAt]));
+
+    const unreadEntries = await Promise.all(
+      channels.map(async (channel) => {
+        const lastReadAt = readByChannelId.get(channel.id);
+        const unreadCount = await this.prisma.message.count({
+          where: {
+            channelId: channel.id,
+            userId: { not: userId },
+            ...(lastReadAt ? { createdAt: { gt: lastReadAt } } : {}),
+          },
+        });
+        return { channelId: channel.id, unreadCount };
+      }),
+    );
+    const unreadByChannelId = new Map(unreadEntries.map((item) => [item.channelId, item.unreadCount]));
+
     return channels.map((channel) => ({
       id: channel.id,
       name: channel.name,
@@ -48,6 +80,7 @@ export class ChannelService {
       type: channel.type,
       private: channel.type === ChannelType.PRIVATE,
       membersCount: channel.ChannelMember.length,
+      unreadCount: unreadByChannelId.get(channel.id) ?? 0,
     }));
   }
 
@@ -96,6 +129,8 @@ export class ChannelService {
       description: channel.description ?? "",
       type: channel.type,
       private: channel.type === ChannelType.PRIVATE,
+      membersCount: 1,
+      unreadCount: 0,
     };
   }
 
@@ -177,6 +212,42 @@ export class ChannelService {
     };
   }
 
+  async markAsRead(workspaceRef: string, channelRef: string, userId: string) {
+    const channel = await this.resolveChannel(workspaceRef, channelRef);
+    await this.requireChannelAccess(channel.id, channel.workspaceId, channel.type, userId);
+
+    const now = new Date();
+    await this.prisma.channelReadState.upsert({
+      where: {
+        channelId_userId: {
+          channelId: channel.id,
+          userId,
+        },
+      },
+      create: {
+        id: randomUUID(),
+        channelId: channel.id,
+        userId,
+        lastReadAt: now,
+      },
+      update: {
+        lastReadAt: now,
+      },
+    });
+
+    this.messageGateway.emitUnreadCountForUser(userId, {
+      workspaceId: channel.workspaceId,
+      channelId: channel.id,
+      unreadCount: 0,
+    });
+
+    return {
+      channelId: channel.id,
+      unreadCount: 0,
+      lastReadAt: now,
+    };
+  }
+
   private normalizeChannelName(raw: string): string {
     const slug = raw
       .toLowerCase()
@@ -205,6 +276,24 @@ export class ChannelService {
     }
 
     return workspace;
+  }
+
+  private async resolveChannel(workspaceRef: string, channelRef: string) {
+    const workspace = await this.resolveWorkspace(workspaceRef);
+    const normalized = this.normalizeChannelName(channelRef);
+    const channel = await this.prisma.channel.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        OR: [{ id: channelRef }, { name: normalized }],
+      },
+      select: { id: true, workspaceId: true, type: true },
+    });
+
+    if (!channel) {
+      throw new NotFoundException("Channel not found");
+    }
+
+    return channel;
   }
 
   private async requireWorkspaceMember(workspaceId: string, userId: string) {
@@ -238,5 +327,32 @@ export class ChannelService {
     }
 
     return channel;
+  }
+
+  private async requireChannelAccess(
+    channelId: string,
+    workspaceId: string,
+    channelType: ChannelType,
+    userId: string,
+  ) {
+    await this.requireWorkspaceMember(workspaceId, userId);
+
+    if (channelType === ChannelType.PUBLIC) {
+      return;
+    }
+
+    const channelMember = await this.prisma.channelMember.findUnique({
+      where: {
+        channelId_userId: {
+          channelId,
+          userId,
+        },
+      },
+      select: { id: true },
+    });
+
+    if (!channelMember) {
+      throw new ForbiddenException("You are not a member of this channel");
+    }
   }
 }

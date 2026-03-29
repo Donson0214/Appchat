@@ -1,31 +1,25 @@
 <template>
-  <div class="h-screen overflow-hidden bg-white text-slate-800">
-    <div class="flex h-full">
-      <Sidebar />
-      <WorkspaceSidebar />
+  <main class="flex min-w-0 flex-1 flex-col">
+    <AppHeader :channel="headerChannel" />
 
-      <main class="flex min-w-0 flex-1 flex-col">
-        <AppHeader :channel="headerChannel" />
-
-        <div v-if="pageError" class="border-b border-red-200 bg-red-50 px-6 py-2 text-sm text-red-700">
-          {{ pageError }}
-        </div>
-
-        <div v-if="isLoading" class="flex flex-1 items-center justify-center text-slate-500">Loading direct message...</div>
-        <ChatContainer v-else :channel="chatChannel" @send-message="handleSendMessage" />
-      </main>
-
-      <RightPanel :is-open="false" />
+    <div v-if="pageError" class="border-b border-red-200 bg-red-50 px-6 py-2 text-sm text-red-700">
+      {{ pageError }}
     </div>
-  </div>
+    <div v-if="presenceError" class="border-b border-amber-200 bg-amber-50 px-6 py-2 text-sm text-amber-700">
+      {{ presenceError }}
+    </div>
+
+    <div v-if="isLoading" class="flex flex-1 items-center justify-center text-slate-500">Loading direct message...</div>
+    <ChatContainer v-else :channel="chatChannel" @send-message="handleSendMessage" />
+  </main>
+
+  <RightPanel :is-open="false" />
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { io, type Socket } from "socket.io-client";
-import Sidebar from "~/components/layout/Sidebar.vue";
-import WorkspaceSidebar from "~/components/layout/WorkspaceSidebar.vue";
 import Header from "~/components/layout/Header.vue";
 import ChatContainer from "~/components/chat/ChatContainer.vue";
 import RightPanel from "~/components/layout/RightPanel.vue";
@@ -33,7 +27,12 @@ import { useWorkspace } from "../../../../composables/use-workspace";
 import { useDmApi } from "../../../../composables/use-dm-api";
 import { useMessageApi } from "../../../../composables/use-message-api";
 import { usePresenceApi } from "../../../../composables/use-presence-api";
+import { usePresenceRealtime } from "../../../../composables/use-presence-realtime";
 import { getValidAccessToken } from "../../../../utils/auth-session";
+
+definePageMeta({
+  key: (route) => `workspace-dm-${String(route.params.workspaceId ?? "")}`,
+});
 
 type ChatMessage = {
   id: string;
@@ -50,6 +49,7 @@ const { workspace, loadWorkspace } = useWorkspace();
 const { openDirectMessage } = useDmApi();
 const { fetchMessages, sendMessage } = useMessageApi();
 const { fetchWorkspacePresence } = usePresenceApi();
+const { connect: connectPresence, subscribeWorkspace, onPresenceChanged, connectionError } = usePresenceRealtime();
 
 const workspaceRef = computed(() => String(route.params.workspaceId ?? workspace.value.id ?? ""));
 const memberId = computed(() => String(route.params.memberId ?? ""));
@@ -61,9 +61,11 @@ const recipientPresence = ref("offline");
 const messages = ref<ChatMessage[]>([]);
 const isLoading = ref(true);
 const pageError = ref("");
+const presenceError = ref("");
 
 const socketRef = ref<Socket | null>(null);
 const activeSocketRoom = ref("");
+let removePresenceListener: (() => void) | null = null;
 
 const colorPool = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-red-500", "bg-cyan-500"];
 
@@ -153,9 +155,10 @@ const hydrateDm = async () => {
       recipientName.value = matched.name;
       recipientRole.value = matched.role;
       recipientPresence.value = matched.status;
+      presenceError.value = "";
     }
   } catch {
-    // Presence should not block DM rendering.
+    presenceError.value = "Presence is temporarily unavailable.";
   }
 
   try {
@@ -231,18 +234,49 @@ const handleSendMessage = async (content: string) => {
   }
 };
 
+const ensurePresenceRealtime = async () => {
+  if (!workspaceRef.value) {
+    return;
+  }
+
+  try {
+    connectPresence();
+    await subscribeWorkspace(workspaceRef.value);
+    presenceError.value = "";
+  } catch (error) {
+    presenceError.value = error instanceof Error ? error.message : "Presence realtime is unavailable.";
+  }
+};
+
 onMounted(async () => {
   await loadWorkspace();
   await hydrateDm();
+  await ensurePresenceRealtime();
+  removePresenceListener = onPresenceChanged((event) => {
+    if (event.userId === memberId.value) {
+      recipientPresence.value = event.status;
+    }
+  });
   ensureSocketRoom();
 });
 
 watch([workspaceRef, memberId], async () => {
   await hydrateDm();
+  await ensurePresenceRealtime();
   ensureSocketRoom();
 });
 
+watch(connectionError, (value) => {
+  if (value) {
+    presenceError.value = value;
+  }
+});
+
 onBeforeUnmount(() => {
+  if (removePresenceListener) {
+    removePresenceListener();
+    removePresenceListener = null;
+  }
   if (socketRef.value) {
     socketRef.value.disconnect();
     socketRef.value = null;
