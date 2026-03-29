@@ -33,14 +33,19 @@
     </p>
 
     <div class="mt-5">
-      <p class="mb-1.5 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-[#64748b]">
-        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current">
+      <button
+        type="button"
+        class="mb-1.5 flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-bold tracking-[0.08em] text-[#64748b] transition-colors duration-150 hover:bg-slate-200/60"
+        :aria-expanded="isChannelsOpen ? 'true' : 'false'"
+        @click="isChannelsOpen = !isChannelsOpen"
+      >
+        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current transition-transform duration-150" :class="isChannelsOpen ? '' : '-rotate-90'">
           <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z" />
         </svg>
         <span>CHANNELS</span>
-      </p>
+      </button>
 
-      <div class="space-y-0.5 text-[17px] text-[#475569]">
+      <div v-show="isChannelsOpen" class="space-y-0.5 text-[17px] text-[#475569]">
         <button
           v-for="channel in channels"
           :key="channel.id || channel.slug"
@@ -69,18 +74,24 @@
           <span class="text-[22px] leading-none">+</span>
           <span>Add channel</span>
         </button>
+        <p v-if="channels.length === 0" class="px-3 py-1.5 text-[13px] text-slate-400">No channels yet.</p>
       </div>
     </div>
 
     <div class="mt-5">
-      <p class="mb-2 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-slate-500">
-        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current">
+      <button
+        type="button"
+        class="mb-2 flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] font-bold tracking-[0.08em] text-slate-500 transition-colors duration-150 hover:bg-slate-200/60"
+        :aria-expanded="isDirectMessagesOpen ? 'true' : 'false'"
+        @click="isDirectMessagesOpen = !isDirectMessagesOpen"
+      >
+        <svg viewBox="0 0 20 20" class="h-3.5 w-3.5 fill-current transition-transform duration-150" :class="isDirectMessagesOpen ? '' : '-rotate-90'">
           <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z" />
         </svg>
         DIRECT MESSAGES
-      </p>
+      </button>
 
-      <div class="space-y-1">
+      <div v-show="isDirectMessagesOpen" class="space-y-1">
         <button
           v-for="person in directMessages"
           :key="person.id"
@@ -100,6 +111,7 @@
             <span class="text-[17px]" :class="activeDirectMessage === person.id ? 'text-indigo-600' : 'text-slate-700'">{{ person.name }}</span>
           </span>
         </button>
+        <p v-if="directMessages.length === 0" class="px-2 py-1.5 text-[13px] text-slate-400">No direct messages yet.</p>
       </div>
     </div>
 
@@ -203,6 +215,8 @@ type DirectMessageItem = {
 const channels = ref<ChannelItem[]>([]);
 const directMessages = ref<DirectMessageItem[]>([]);
 const sidebarError = ref("");
+const isChannelsOpen = ref(true);
+const isDirectMessagesOpen = ref(true);
 
 const isCreateChannelOpen = ref(false);
 const newChannelName = ref("");

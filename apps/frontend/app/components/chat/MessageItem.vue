@@ -1,5 +1,13 @@
 ﻿<template>
-  <article class="group relative -mx-2 rounded-md px-2 py-1.5 transition-colors duration-150 hover:bg-slate-100/80">
+  <article
+    class="group relative -mx-2 cursor-pointer rounded-md px-2 py-1.5 transition-colors duration-150 hover:bg-slate-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300 focus-visible:ring-offset-1 active:bg-slate-100"
+    tabindex="0"
+    role="button"
+    :aria-label="`Open thread for message from ${message.name}`"
+    @click="onRowClick"
+    @keydown.enter.prevent="openThread"
+    @keydown.space.prevent="openThread"
+  >
     <div class="flex gap-3.5">
       <MessageAvatar :initials="message.initials" :color="message.color" />
 
@@ -30,6 +38,7 @@
         </div>
 
         <MessageReactions
+          data-no-row-open
           :reactions="message.reactions"
           :replies="message.replies"
           :last-reply="message.lastReply"
@@ -40,7 +49,7 @@
       </div>
     </div>
 
-    <div class="pointer-events-none absolute right-2 top-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+    <div data-no-row-open class="pointer-events-none absolute right-2 top-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
       <div class="inline-flex items-center gap-0.5 rounded-md border border-slate-200 bg-white p-1 shadow-[0_1px_6px_rgba(15,23,42,0.12)]">
         <button
           type="button"
@@ -117,6 +126,39 @@ const emit = defineEmits<{
 
 const openThread = () => {
   emit("open-thread", props.message);
+};
+
+const hasSelectedText = () => {
+  if (typeof window === "undefined" || !window.getSelection) {
+    return false;
+  }
+  const selected = window.getSelection()?.toString().trim() ?? "";
+  return selected.length > 0;
+};
+
+const isInteractiveTarget = (target: EventTarget | null, rowElement: HTMLElement | null) => {
+  const element = target as HTMLElement | null;
+  if (!element || typeof element.closest !== "function") {
+    return false;
+  }
+  const interactive = element.closest(
+    "button, a, input, textarea, select, label, [contenteditable='true'], [data-no-row-open]",
+  );
+  if (!interactive) {
+    return false;
+  }
+  return interactive !== rowElement;
+};
+
+const onRowClick = (event: MouseEvent) => {
+  const rowElement = event.currentTarget as HTMLElement | null;
+  if (hasSelectedText()) {
+    return;
+  }
+  if (isInteractiveTarget(event.target, rowElement)) {
+    return;
+  }
+  openThread();
 };
 
 const onMentionClick = (mention: {

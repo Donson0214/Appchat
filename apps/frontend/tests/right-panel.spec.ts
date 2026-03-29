@@ -200,5 +200,78 @@ describe("RightPanel", () => {
     expect((updatedInput.element as HTMLInputElement).value).toBe("");
     expect(socketEmitMock).toHaveBeenCalledWith("join-room", { workspaceId: "workspace-1", channelRef: "channel-2" });
   });
+
+  it("does not re-emit profile-selected for identical profile hint payload", async () => {
+    fetchWorkspacePresenceMock.mockResolvedValue([
+      {
+        id: "u2",
+        name: "Jane",
+        email: "jane@example.com",
+        role: "MEMBER",
+        isSelf: false,
+        status: "online",
+      },
+    ]);
+
+    const wrapper = mount(RightPanel, {
+      props: {
+        isOpen: true,
+        workspaceId: "workspace-1",
+        channelRef: "channel-1",
+        threadMessage: { id: "m1", name: "Don", text: "Root message" },
+      },
+    });
+
+    await wrapper.setProps({
+      profileHint: { userId: "u2", name: "Jane" },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const emittedFirst = wrapper.emitted("profile-selected") ?? [];
+    expect(emittedFirst.length).toBe(1);
+
+    await wrapper.setProps({
+      profileHint: { userId: "u2", name: "Jane" },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const emittedSecond = wrapper.emitted("profile-selected") ?? [];
+    expect(emittedSecond.length).toBe(1);
+    expect(fetchWorkspacePresenceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears profile loading and shows explicit error on profile fetch timeout", async () => {
+    vi.useFakeTimers();
+    fetchWorkspacePresenceMock.mockImplementation(
+      () =>
+        new Promise(() => {
+          // keep pending to trigger timeout path
+        }),
+    );
+
+    const wrapper = mount(RightPanel, {
+      props: {
+        isOpen: true,
+        workspaceId: "workspace-1",
+        channelRef: "channel-1",
+        threadMessage: { id: "m1", name: "Don", text: "Root message" },
+        profileHint: { userId: "u2", name: "Jane" },
+      },
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(wrapper.text()).toContain("Loading profile...");
+
+    await vi.advanceTimersByTimeAsync(8100);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(wrapper.text()).toContain("Unable to load profile. Please try again.");
+    expect(wrapper.text()).not.toContain("Loading profile...");
+    vi.useRealTimers();
+  });
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <aside class="flex h-full w-[84px] flex-col items-center justify-between border-r border-slate-800 bg-[#0d1b3a] py-4">
+  <aside class="flex h-full w-[84px] flex-col items-center justify-between border-r border-rose-950/60 bg-gradient-to-b from-[#ff5a7a] via-[#b12656] to-[#3f0d2e] py-4">
     <div class="flex w-full flex-col items-center gap-2.5">
       <button
         v-for="(item, index) in workspaces"
@@ -13,13 +13,6 @@
         <span v-if="item.id === workspace.id" class="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-indigo-500" />
       </button>
 
-      <button
-        class="mt-3 flex h-[58px] w-[58px] items-center justify-center rounded-[14px] border border-dashed border-slate-600 text-[30px] leading-none text-slate-400 transition-all duration-200 ease-in-out hover:bg-slate-800"
-        type="button"
-        @click="goCreateWorkspace"
-      >
-        +
-      </button>
     </div>
 
     <div class="relative mb-1">
@@ -29,7 +22,7 @@
         @click="toggleProfileMenu"
       >
         {{ userInitial }}
-        <span class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#0d1b3a] bg-emerald-400" />
+        <span class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-[#5b1538] bg-emerald-400" />
       </button>
 
       <div
@@ -186,7 +179,4 @@ const selectWorkspace = async (workspaceId: string) => {
   await router.push(`/workspace/${selected.id}/channel/general`);
 };
 
-const goCreateWorkspace = async () => {
-  await router.push("/workspace/create");
-};
 </script>

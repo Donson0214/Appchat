@@ -1,27 +1,28 @@
 ﻿<template>
   <div class="flex h-full w-[292px] flex-col border-r border-slate-300 bg-[#f8fafc]">
-    <div ref="workspaceMenuRef" class="relative flex h-[84px] items-center justify-between border-b border-slate-300 px-4">
+    <div ref="workspaceMenuRef" class="relative flex h-[72px] items-center border-b border-slate-300 px-3">
       <button
+        ref="workspaceTriggerRef"
         type="button"
-        class="flex items-center gap-3 rounded-md p-1 transition-colors duration-200 hover:bg-slate-100"
-        @click="isWorkspaceMenuOpen = !isWorkspaceMenuOpen"
+        class="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition-colors duration-200 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        aria-haspopup="menu"
+        :aria-expanded="isWorkspaceMenuOpen ? 'true' : 'false'"
+        @click="toggleWorkspaceMenu"
       >
-        <div class="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-500 text-[20px] font-semibold text-white">{{ workspaceInitial }}</div>
-        <p class="text-[40px] font-semibold leading-none text-slate-900">{{ workspace.name }}</p>
-      </button>
-      <button
-        type="button"
-        class="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition-colors duration-200 hover:bg-slate-200/70"
-        @click="isWorkspaceMenuOpen = !isWorkspaceMenuOpen"
-      >
-        <svg viewBox="0 0 20 20" class="h-4 w-4 fill-current">
+        <span class="flex min-w-0 items-center gap-2.5">
+          <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-indigo-500 text-[16px] font-semibold text-white">{{ workspaceInitial }}</span>
+          <span class="truncate text-[19px] font-semibold leading-none text-slate-900">{{ workspace.name }}</span>
+        </span>
+        <svg viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-slate-400 transition-transform duration-150" :class="isWorkspaceMenuOpen ? 'rotate-180' : ''">
           <path d="M5.3 7.7a1 1 0 0 1 1.4 0L10 11l3.3-3.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 0 1 0-1.4Z" />
         </svg>
       </button>
 
       <div
         v-if="isWorkspaceMenuOpen"
-        class="absolute left-4 top-[72px] z-50 w-[280px] overflow-hidden rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]"
+        ref="workspaceDropdownRef"
+        class="fixed z-50 w-[280px] overflow-visible rounded-md border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.2)]"
+        :style="workspaceDropdownStyle"
       >
         <div class="border-b border-slate-200 px-3 py-2">
           <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">Invite code</p>
@@ -179,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ChannelSidebar from "./ChannelSidebar.vue";
 import { useWorkspace } from "../../composables/use-workspace";
@@ -193,6 +194,9 @@ const router = useRouter();
 const isWorkspaceMenuOpen = ref(false);
 const actionWorkspaceId = ref<string | null>(null);
 const workspaceMenuRef = ref<HTMLElement | null>(null);
+const workspaceTriggerRef = ref<HTMLElement | null>(null);
+const workspaceDropdownRef = ref<HTMLElement | null>(null);
+const workspaceDropdownStyle = ref<Record<string, string>>({});
 const inviteCopyStatus = ref("");
 const isNightMode = ref(false);
 
@@ -226,6 +230,47 @@ const activeInviteCode = computed(() => {
   const active = workspaceOptions.value.find((item) => item.id === workspace.value.id || item.slug === workspace.value.slug);
   return active?.inviteCode || null;
 });
+
+const updateWorkspaceDropdownPosition = () => {
+  if (!isWorkspaceMenuOpen.value || !workspaceTriggerRef.value) {
+    return;
+  }
+
+  const triggerRect = workspaceTriggerRef.value.getBoundingClientRect();
+  const dropdownWidth = workspaceDropdownRef.value?.offsetWidth || 280;
+  const dropdownHeight = workspaceDropdownRef.value?.offsetHeight || 420;
+  const margin = 8;
+
+  let left = triggerRect.right + 8;
+  let top = triggerRect.top;
+
+  if (left + dropdownWidth > window.innerWidth - margin) {
+    left = triggerRect.left - dropdownWidth - 8;
+  }
+  if (left < margin) {
+    left = margin;
+  }
+
+  if (top + dropdownHeight > window.innerHeight - margin) {
+    top = window.innerHeight - dropdownHeight - margin;
+  }
+  if (top < margin) {
+    top = margin;
+  }
+
+  workspaceDropdownStyle.value = {
+    left: `${Math.round(left)}px`,
+    top: `${Math.round(top)}px`,
+  };
+};
+
+const toggleWorkspaceMenu = async () => {
+  isWorkspaceMenuOpen.value = !isWorkspaceMenuOpen.value;
+  if (isWorkspaceMenuOpen.value) {
+    await nextTick();
+    updateWorkspaceDropdownPosition();
+  }
+};
 
 const selectWorkspace = async (item: (typeof workspaceOptions.value)[number]) => {
   saveWorkspace({
@@ -296,6 +341,14 @@ const handleOutsideClick = (event: MouseEvent) => {
   }
 };
 
+const handleEscClose = (event: KeyboardEvent) => {
+  if (event.key !== "Escape") {
+    return;
+  }
+  isWorkspaceMenuOpen.value = false;
+  actionWorkspaceId.value = null;
+};
+
 const toggleActions = (workspaceId: string) => {
   actionWorkspaceId.value = actionWorkspaceId.value === workspaceId ? null : workspaceId;
 };
@@ -330,9 +383,23 @@ onMounted(() => {
   isNightMode.value = storedMode === "night";
   applyThemeMode(isNightMode.value);
   document.addEventListener("mousedown", handleOutsideClick);
+  document.addEventListener("keydown", handleEscClose);
+  window.addEventListener("resize", updateWorkspaceDropdownPosition);
+  window.addEventListener("scroll", updateWorkspaceDropdownPosition, true);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener("mousedown", handleOutsideClick);
+  document.removeEventListener("keydown", handleEscClose);
+  window.removeEventListener("resize", updateWorkspaceDropdownPosition);
+  window.removeEventListener("scroll", updateWorkspaceDropdownPosition, true);
+});
+
+watch(isWorkspaceMenuOpen, async (open) => {
+  if (!open) {
+    return;
+  }
+  await nextTick();
+  updateWorkspaceDropdownPosition();
 });
 </script>
