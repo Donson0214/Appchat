@@ -1,3 +1,5 @@
+import { getAuthHeadersOrNull, handleUnauthorizedError } from "../utils/auth-session";
+
 type MessageDto = {
   id: string;
   content: string;
@@ -23,16 +25,7 @@ const getApiBaseUrl = (rawBaseUrl: string) => {
 };
 
 const getAuthHeaders = () => {
-  if (!process.client) {
-    return {};
-  }
-
-  const token = localStorage.getItem("appchat_access_token");
-  if (!token) {
-    return {};
-  }
-
-  return { Authorization: `Bearer ${token}` };
+  return getAuthHeadersOrNull();
 };
 
 export const useMessageApi = () => {
@@ -40,21 +33,39 @@ export const useMessageApi = () => {
   const apiBaseUrl = getApiBaseUrl(config.public.apiBaseUrl);
 
   const fetchMessages = async (workspaceId: string, channelRef: string): Promise<MessageDto[]> => {
-    return $fetch<MessageDto[]>(
-      `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/messages`,
-      { headers: getAuthHeaders() },
-    );
+    const headers = getAuthHeaders();
+    if (!headers) return [];
+
+    try {
+      return await $fetch<MessageDto[]>(
+        `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/messages`,
+        { headers },
+      );
+    } catch (error) {
+      await handleUnauthorizedError(error);
+      throw error;
+    }
   };
 
   const sendMessage = async (workspaceId: string, channelRef: string, content: string) => {
-    return $fetch<MessageDto>(
-      `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/messages`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: { content },
-      },
-    );
+    const headers = getAuthHeaders();
+    if (!headers) {
+      throw new Error("UNAUTHENTICATED");
+    }
+
+    try {
+      return await $fetch<MessageDto>(
+        `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/messages`,
+        {
+          method: "POST",
+          headers,
+          body: { content },
+        },
+      );
+    } catch (error) {
+      await handleUnauthorizedError(error);
+      throw error;
+    }
   };
 
   return {

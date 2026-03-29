@@ -105,6 +105,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     `);
 
     await this.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'NotificationType') THEN
+          CREATE TYPE "NotificationType" AS ENUM ('MENTION');
+        END IF;
+      END
+      $$;
+    `);
+
+    await this.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "Workspace" (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -175,6 +185,35 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     `);
 
     await this.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "MessageMention" (
+        id TEXT PRIMARY KEY,
+        "messageId" TEXT NOT NULL REFERENCES "Message"(id) ON DELETE CASCADE,
+        "workspaceId" TEXT NOT NULL REFERENCES "Workspace"(id) ON DELETE CASCADE,
+        "channelId" TEXT NOT NULL REFERENCES "Channel"(id) ON DELETE CASCADE,
+        "mentionedById" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        "mentionedUserId" TEXT REFERENCES "User"(id) ON DELETE CASCADE,
+        "mentionKey" TEXT NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Notification" (
+        id TEXT PRIMARY KEY,
+        "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+        "workspaceId" TEXT NOT NULL REFERENCES "Workspace"(id) ON DELETE CASCADE,
+        "channelId" TEXT NOT NULL REFERENCES "Channel"(id) ON DELETE CASCADE,
+        "messageId" TEXT NOT NULL REFERENCES "Message"(id) ON DELETE CASCADE,
+        "mentionKey" TEXT,
+        type "NotificationType" NOT NULL DEFAULT 'MENTION',
+        preview TEXT NOT NULL,
+        "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "readAt" TIMESTAMP(3)
+      );
+    `);
+
+    await this.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "Workspace_slug_key" ON "Workspace"(slug);
     `);
 
@@ -219,6 +258,30 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
     await this.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "Message_userId_idx" ON "Message"("userId");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "MessageMention_messageId_idx" ON "MessageMention"("messageId");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "MessageMention_workspaceId_channelId_createdAt_idx"
+      ON "MessageMention"("workspaceId", "channelId", "createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "MessageMention_mentionedUserId_createdAt_idx"
+      ON "MessageMention"("mentionedUserId", "createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "Notification_userId_isRead_createdAt_idx"
+      ON "Notification"("userId", "isRead", "createdAt");
+    `);
+
+    await this.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "Notification_workspaceId_channelId_createdAt_idx"
+      ON "Notification"("workspaceId", "channelId", "createdAt");
     `);
   }
 }

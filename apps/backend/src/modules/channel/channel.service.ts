@@ -16,6 +16,11 @@ export class ChannelService {
     const channels = await this.prisma.channel.findMany({
       where: {
         workspaceId: workspace.id,
+        NOT: {
+          name: {
+            startsWith: "dm-",
+          },
+        },
         OR: [
           { type: ChannelType.PUBLIC },
           {
@@ -98,6 +103,22 @@ export class ChannelService {
     const workspace = await this.resolveWorkspace(workspaceRef);
     const requesterMembership = await this.requireWorkspaceMember(workspace.id, requesterId);
     const channel = await this.findChannel(workspace.id, channelRef);
+    const requesterChannelMember = await this.prisma.channelMember.findUnique({
+      where: {
+        channelId_userId: {
+          channelId: channel.id,
+          userId: requesterId,
+        },
+      },
+    });
+
+    if (
+      channel.type === ChannelType.PRIVATE &&
+      requesterMembership.role !== WorkspaceRole.ADMIN &&
+      !requesterChannelMember
+    ) {
+      throw new ForbiddenException("Only workspace admins or channel members can invite to a private channel");
+    }
 
     const email = dto.email.toLowerCase().trim();
     const user = await this.prisma.user.upsert({

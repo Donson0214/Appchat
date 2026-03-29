@@ -6,7 +6,7 @@
         <button
           type="button"
           class="text-[14px] font-medium leading-5 text-[#1264A3] transition-colors duration-200 hover:opacity-85"
-          @click="markAllRead"
+          @click="onMarkAllRead"
         >
           Mark all read
         </button>
@@ -22,141 +22,115 @@
       </div>
     </div>
 
+    <div v-if="errorText" class="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">
+      {{ errorText }}
+    </div>
+
     <div class="max-h-[420px] overflow-y-auto bg-white [scrollbar-width:thin]">
+      <div v-if="loading" class="px-4 py-6 text-center text-sm text-slate-500">Loading notifications...</div>
+
       <article
         v-for="item in notifications"
         :key="item.id"
         class="relative flex cursor-pointer items-start gap-3 border-b border-[#E8E8E8] px-4 py-[11px] transition-colors duration-150 ease-in-out hover:bg-[#F4F4F5]"
+        @click="openNotification(item)"
       >
         <div class="relative">
-          <div class="flex h-8 w-8 items-center justify-center rounded-[8px] text-[14px] font-semibold text-white" :class="item.avatarColor">
-            {{ item.initials }}
+          <div class="flex h-8 w-8 items-center justify-center rounded-[8px] bg-indigo-500 text-[14px] font-semibold text-white">
+            @
           </div>
           <span
-            class="absolute -bottom-1 -right-1 inline-flex h-[14px] w-[14px] items-center justify-center rounded-full border-2 border-white text-[8px] font-medium text-white"
-            :class="item.badgeColor"
+            class="absolute -bottom-1 -right-1 inline-flex h-[14px] w-[14px] items-center justify-center rounded-full border-2 border-white bg-indigo-500 text-[8px] font-medium text-white"
           >
-            {{ item.badge }}
+            @
           </span>
         </div>
 
         <div class="min-w-0 pr-5">
           <p class="text-[14px] font-normal leading-5 text-[#1D1C1D]">
-            <span class="font-semibold text-[#1D1C1D]">{{ item.name }}</span>
-            <template v-if="item.type === 'mention'">
-              <span> {{ item.prefix }} {{ item.message }}</span>
-            </template>
-            <template v-else-if="item.type === 'thread'">
-              <span> replied in thread: "{{ item.message }}"</span>
-            </template>
-            <template v-else-if="item.type === 'reaction'">
-              <span> reacted <span class="mx-0.5 inline-block align-baseline text-[16px] leading-none">{{ item.emoji }}</span> to your message</span>
-            </template>
-            <span class="font-medium text-[#1264A3]"> {{ item.channel }}</span>
+            <span class="font-semibold text-[#1D1C1D]">Mention</span>
+            <span> {{ item.preview }}</span>
+            <span class="font-medium text-[#1264A3]"> #{{ item.channel.name }}</span>
           </p>
-          <p class="mt-1 text-[12px] font-normal leading-none text-[#616061]">{{ item.time }}</p>
+          <p class="mt-1 text-[12px] font-normal leading-none text-[#616061]">{{ formatTime(item.createdAt) }}</p>
         </div>
 
         <span
-          v-if="item.unread"
+          v-if="!item.isRead"
           class="absolute right-4 top-1/2 h-[7px] w-[7px] -translate-y-1/2 rounded-full bg-[#1264A3]"
         />
       </article>
-    </div>
 
-    <div class="flex items-center justify-center border-t border-[#E8E8E8] bg-white px-4 py-3">
-      <button
-        type="button"
-        class="text-[14px] font-medium text-[#1264A3] transition-colors duration-200 hover:opacity-85"
-      >
-        View all notifications
-      </button>
+      <div v-if="!loading && notifications.length === 0" class="px-4 py-6 text-center text-sm text-slate-500">
+        No notifications yet.
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-type NotificationType = "mention" | "thread" | "reaction";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { useNotificationApi, type NotificationItem } from "../../composables/use-notification-api";
 
-const notifications = ref<
-  Array<{
-    id: string;
-    initials: string;
-    avatarColor: string;
-    badge: string;
-    badgeColor: string;
-    name: string;
-    type: NotificationType;
-    prefix?: string;
-    message: string;
-    emoji?: string;
-    channel: string;
-    time: string;
-    unread: boolean;
-  }>
->([
-  {
-    id: "1",
-    initials: "SC",
-    avatarColor: "bg-pink-500",
-    badge: "@",
-    badgeColor: "bg-indigo-500",
-    name: "Sarah Chen",
-    type: "mention",
-    prefix: "@alex",
-    message: "can you review the PR?",
-    channel: "#general",
-    time: "5m ago",
-    unread: true,
-  },
-  {
-    id: "2",
-    initials: "JK",
-    avatarColor: "bg-amber-500",
-    badge: "💬",
-    badgeColor: "bg-blue-500",
-    name: "Jordan Kim",
-    type: "thread",
-    message: "Looks good to merge",
-    channel: "#engineering",
-    time: "12m ago",
-    unread: true,
-  },
-  {
-    id: "3",
-    initials: "MW",
-    avatarColor: "bg-emerald-500",
-    badge: "😊",
-    badgeColor: "bg-orange-400",
-    name: "Marcus Webb",
-    type: "reaction",
-    message: "",
-    emoji: "\uD83C\uDF89",
-    channel: "#design",
-    time: "1h ago",
-    unread: true,
-  },
-  {
-    id: "4",
-    initials: "PP",
-    avatarColor: "bg-violet-500",
-    badge: "@",
-    badgeColor: "bg-indigo-500",
-    name: "Priya Patel",
-    type: "mention",
-    prefix: "@channel",
-    message: "Q2 roadmap is ready for review",
-    channel: "#general",
-    time: "2h ago",
-    unread: false,
-  },
-]);
-
-const markAllRead = () => {
-  notifications.value = notifications.value.map((item) => ({ ...item, unread: false }));
-};
-
-defineEmits<{
+const emit = defineEmits<{
   close: [];
 }>();
+
+const router = useRouter();
+const { fetchNotifications, markAllRead, markRead } = useNotificationApi();
+
+const notifications = ref<NotificationItem[]>([]);
+const loading = ref(false);
+const errorText = ref("");
+
+const formatTime = (iso: string) => {
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.valueOf())) {
+    return "now";
+  }
+  return dt.toLocaleString();
+};
+
+const refreshNotifications = async () => {
+  loading.value = true;
+  errorText.value = "";
+
+  try {
+    notifications.value = await fetchNotifications();
+  } catch {
+    errorText.value = "Unable to load notifications.";
+  } finally {
+    loading.value = false;
+  }
+};
+
+const onMarkAllRead = async () => {
+  try {
+    await markAllRead();
+    notifications.value = notifications.value.map((item) => ({ ...item, isRead: true }));
+  } catch {
+    errorText.value = "Unable to mark notifications as read.";
+  }
+};
+
+const openNotification = async (item: NotificationItem) => {
+  try {
+    if (!item.isRead) {
+      await markRead([item.id]);
+      notifications.value = notifications.value.map((current) =>
+        current.id === item.id ? { ...current, isRead: true } : current,
+      );
+    }
+
+    await router.push(`/workspace/${item.workspaceId}/channel/${item.channel.id}`);
+    emit("close");
+  } catch {
+    errorText.value = "Unable to open notification target.";
+  }
+};
+
+onMounted(async () => {
+  await refreshNotifications();
+});
 </script>

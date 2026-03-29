@@ -1,4 +1,6 @@
-﻿type AuthUser = {
+import { clearAuthSession, getValidAccessToken, handleUnauthorizedError } from "../utils/auth-session";
+
+type AuthUser = {
   id: string;
   email: string;
   fullName: string | null;
@@ -66,8 +68,8 @@ export const resolvePostAuthRedirectPath = async (): Promise<string> => {
     return "/workspace/create";
   }
 
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) {
+  const validToken = getValidAccessToken();
+  if (!validToken) {
     return "/sign-in";
   }
 
@@ -79,7 +81,7 @@ export const resolvePostAuthRedirectPath = async (): Promise<string> => {
       `${apiBaseUrl}/workspaces/me`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${validToken}`,
         },
       },
     );
@@ -92,7 +94,7 @@ export const resolvePostAuthRedirectPath = async (): Promise<string> => {
           `${apiBaseUrl}/workspaces/${first.id}/channels`,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${validToken}`,
             },
           },
         );
@@ -107,7 +109,8 @@ export const resolvePostAuthRedirectPath = async (): Promise<string> => {
 
       return `/workspace/${first.id}/channel/general`;
     }
-  } catch {
+  } catch (error) {
+    await handleUnauthorizedError(error);
     // fall through to create page
   }
 
@@ -144,12 +147,7 @@ export const useAuthApi = () => {
   };
 
   const logout = () => {
-    if (!process.client) {
-      return;
-    }
-
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearAuthSession();
   };
 
   return {
