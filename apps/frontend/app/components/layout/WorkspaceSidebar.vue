@@ -116,27 +116,62 @@
 
     <ChannelSidebar />
 
-    <div class="mt-auto flex h-[66px] items-center justify-between border-t border-slate-300 px-5 text-slate-500">
-      <div class="flex items-center gap-4">
-        <button class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200 hover:bg-slate-200/70">
-          <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
-            <path d="M10 2.5a.8.8 0 0 1 .7 1.2 5.8 5.8 0 1 0 5.6 8.5.8.8 0 0 1 1.4.7A7.4 7.4 0 1 1 10 2.5Z" />
+    <div
+      class="mt-auto flex h-[66px] items-center justify-between border-t border-slate-300 px-5 text-slate-500 transition-colors duration-200"
+      :class="isNightMode ? 'bg-slate-100/90' : 'bg-[#f8fafc]'"
+    >
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-amber-500"
+          :title="isNightMode ? 'Switch to light mode' : 'Switch to night mode'"
+          :aria-label="isNightMode ? 'Switch to light mode' : 'Switch to night mode'"
+          @click="toggleThemeMode"
+        >
+          <svg v-if="isNightMode" viewBox="0 0 20 20" class="h-[20px] w-[20px] fill-current">
+            <path d="M10 3a.9.9 0 0 1 .9.9v1.4a.9.9 0 1 1-1.8 0V3.9A.9.9 0 0 1 10 3Zm0 10.8a.9.9 0 0 1 .9.9v1.4a.9.9 0 1 1-1.8 0v-1.4a.9.9 0 0 1 .9-.9ZM4.5 9.1a.9.9 0 0 1 0 1.8H3.1a.9.9 0 1 1 0-1.8h1.4Zm12.4 0a.9.9 0 1 1 0 1.8h-1.4a.9.9 0 1 1 0-1.8h1.4ZM6.2 6.2a.9.9 0 0 1 1.3 0l.9.9a.9.9 0 1 1-1.3 1.3l-.9-.9a.9.9 0 0 1 0-1.3Zm5.4 5.4a.9.9 0 0 1 1.3 0l.9.9a.9.9 0 0 1-1.3 1.3l-.9-.9a.9.9 0 0 1 0-1.3ZM7.4 11.6a.9.9 0 0 1 0 1.3l-.9.9a.9.9 0 0 1-1.3-1.3l.9-.9a.9.9 0 0 1 1.3 0Zm6.4-6.4a.9.9 0 0 1 0 1.3l-.9.9a.9.9 0 0 1-1.3-1.3l.9-.9a.9.9 0 0 1 1.3 0ZM10 7.1a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8Z" />
+          </svg>
+          <svg v-else viewBox="0 0 20 20" class="h-[20px] w-[20px] fill-current">
+            <path d="M11.2 2.3a.9.9 0 0 1 .8 1.3 6.6 6.6 0 0 0 8.5 8.6.9.9 0 0 1 1.2 1 8.6 8.6 0 1 1-10.5-10.9Z" />
           </svg>
         </button>
-        <button class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200 hover:bg-slate-200/70" @click="goSettings">
-          <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
-            <path d="M8.5 2.5h3l.3 1.8a5.8 5.8 0 0 1 1.5.9l1.7-.8 2.1 2.1-.8 1.7c.4.5.7 1 .9 1.5l1.8.3v3l-1.8.3a5.8 5.8 0 0 1-.9 1.5l.8 1.7-2.1 2.1-1.7-.8c-.5.4-1 .7-1.5.9l-.3 1.8h-3l-.3-1.8a5.8 5.8 0 0 1-1.5-.9l-1.7.8-2.1-2.1.8-1.7a5.8 5.8 0 0 1-.9-1.5L1 11.5v-3l1.8-.3c.2-.5.5-1 .9-1.5L2.9 5l2.1-2.1 1.7.8c.5-.4 1-.7 1.5-.9l.3-1.8Zm1.5 5.3a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4Z" />
+
+        <button
+          type="button"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-indigo-600"
+          :class="route.path.startsWith('/settings') ? 'bg-indigo-50 text-indigo-600' : ''"
+          title="Settings"
+          aria-label="Open settings"
+          @click="goSettings"
+        >
+          <svg viewBox="0 0 20 20" class="h-[20px] w-[20px] fill-current">
+            <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h3A1.5 1.5 0 0 1 10 5.5v.2h6a1 1 0 1 1 0 2h-6v.3A1.5 1.5 0 0 1 8.5 9.5h-3A1.5 1.5 0 0 1 4 8V7.7H3a1 1 0 1 1 0-2h1v-.2ZM4 12.2a1 1 0 1 1 0-2h6v-.3A1.5 1.5 0 0 1 11.5 8.4h3A1.5 1.5 0 0 1 16 9.9v.3h1a1 1 0 1 1 0 2h-1v.3a1.5 1.5 0 0 1-1.5 1.5h-3a1.5 1.5 0 0 1-1.5-1.5v-.3H4Zm2-.8h2V6h-2v5.4Zm6 1.8h2v-3h-2v3Z" />
           </svg>
         </button>
-        <button class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200 hover:bg-slate-200/70" @click="goAdmin">
-          <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
-            <path d="M6.8 9a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm6.4 1.2a2.6 2.6 0 1 1 0-5.2 2.6 2.6 0 0 1 0 5.2ZM2.5 15.7A4.7 4.7 0 0 1 7.2 11h.7a4.7 4.7 0 0 1 4.7 4.7v.8H2.5v-.8Zm10.2.8v-.8c0-1.2-.4-2.3-1-3.2.4-.1.8-.2 1.3-.2h.4a4 4 0 0 1 4 4v.2h-4.7Z" />
+
+        <button
+          type="button"
+          class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-cyan-600"
+          :class="route.path.startsWith('/admin') ? 'bg-cyan-50 text-cyan-600' : ''"
+          title="Admin"
+          aria-label="Open admin"
+          @click="goAdmin"
+        >
+          <svg viewBox="0 0 20 20" class="h-[20px] w-[20px] fill-current">
+            <path d="M7 9.2A2.7 2.7 0 1 1 7 3.8a2.7 2.7 0 0 1 0 5.4Zm6 1.2a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4ZM2.5 15.8c0-2.2 1.8-4 4-4h1c2.2 0 4 1.8 4 4v.7H2.5v-.7Zm9.2.7v-.7c0-1-.3-1.9-.9-2.6.3-.1.7-.2 1.1-.2h.5a3.3 3.3 0 0 1 3.3 3.3v.2h-4Z" />
           </svg>
         </button>
       </div>
-      <button class="inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-200 hover:bg-slate-200/70">
-        <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
-          <path d="M11 3.5a1 1 0 1 1 2 0v2h2.5a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H13v2a1 1 0 1 1-2 0v-2h-3a1 1 0 0 1 0-2h6.5a.5.5 0 0 0 .5-.5V7.5a.5.5 0 0 0-.5-.5H8A1 1 0 1 1 8 5h3V3.5ZM4.3 6.3a1 1 0 0 1 1.4 0l2.5 2.5a1 1 0 1 1-1.4 1.4L6 9.4V15a1 1 0 1 1-2 0V9.4l-.8.8a1 1 0 0 1-1.4-1.4l2.5-2.5Z" />
+
+      <button
+        type="button"
+        class="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 transition-colors duration-150 hover:bg-slate-200/70 hover:text-rose-600"
+        title="Logout"
+        aria-label="Log out"
+        @click="handleLogout"
+      >
+        <svg viewBox="0 0 20 20" class="h-[20px] w-[20px] fill-current">
+          <path d="M3 3.8A1.8 1.8 0 0 1 4.8 2h5.4A1.8 1.8 0 0 1 12 3.8v2a1 1 0 1 1-2 0V4H5v12h5v-1.8a1 1 0 1 1 2 0v2A1.8 1.8 0 0 1 10.2 18H4.8A1.8 1.8 0 0 1 3 16.2V3.8Zm9.2 3.1a1 1 0 0 1 1.4 0l3.2 3.1a1 1 0 0 1 0 1.4l-3.2 3.1a1 1 0 1 1-1.4-1.4l1.4-1.3H8.7a1 1 0 1 1 0-2h4.9l-1.4-1.3a1 1 0 0 1 0-1.4Z" />
         </svg>
       </button>
     </div>
@@ -145,19 +180,21 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ChannelSidebar from "./ChannelSidebar.vue";
 import { useWorkspace } from "../../composables/use-workspace";
 import { useChannelApi } from "../../composables/use-channel-api";
 
 const { workspace, workspaces, workspaceInitial, loadWorkspace, saveWorkspace } = useWorkspace();
 const { fetchChannels } = useChannelApi();
+const route = useRoute();
 const router = useRouter();
 
 const isWorkspaceMenuOpen = ref(false);
 const actionWorkspaceId = ref<string | null>(null);
 const workspaceMenuRef = ref<HTMLElement | null>(null);
 const inviteCopyStatus = ref("");
+const isNightMode = ref(false);
 
 const badgeColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500", "bg-cyan-500"];
 
@@ -229,6 +266,26 @@ const goAdmin = async () => {
   await router.push("/admin");
 };
 
+const applyThemeMode = (night: boolean) => {
+  if (typeof document === "undefined") {
+    return;
+  }
+  document.documentElement.setAttribute("data-ui-theme", night ? "night" : "day");
+};
+
+const toggleThemeMode = () => {
+  isNightMode.value = !isNightMode.value;
+  localStorage.setItem("appchat_theme_mode", isNightMode.value ? "night" : "day");
+  applyThemeMode(isNightMode.value);
+};
+
+const handleLogout = async () => {
+  localStorage.removeItem("appchat_access_token");
+  localStorage.removeItem("appchat_user");
+  localStorage.removeItem("appchat_workspace");
+  await router.push("/sign-in");
+};
+
 const handleOutsideClick = (event: MouseEvent) => {
   if (!isWorkspaceMenuOpen.value && !actionWorkspaceId.value) return;
   const target = event.target as Node | null;
@@ -269,6 +326,9 @@ const copyInviteCode = async (code: string | null) => {
 
 onMounted(() => {
   loadWorkspace();
+  const storedMode = localStorage.getItem("appchat_theme_mode");
+  isNightMode.value = storedMode === "night";
+  applyThemeMode(isNightMode.value);
   document.addEventListener("mousedown", handleOutsideClick);
 });
 

@@ -9,6 +9,10 @@ module.exports = {
     './nuxt.config.{js,ts}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ["DM Sans", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
+      },
+    },
   },
 };

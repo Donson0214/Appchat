@@ -50,10 +50,12 @@
           @click="goChannel(channel)"
         >
           <span class="flex min-w-0 items-center gap-2.5">
-            <svg v-if="channel.private" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-slate-400">
-              <path d="M10 1.8a4 4 0 0 0-4 4v2H5a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9.8a2 2 0 0 0-2-2h-1v-2a4 4 0 0 0-4-4Zm2.3 6V5.8a2.3 2.3 0 0 0-4.6 0v2h4.6Z" />
+            <svg v-if="channel.private" viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-slate-500">
+              <path d="M10 2.2a4.2 4.2 0 0 1 4.2 4.2V8H15a1.8 1.8 0 0 1 1.8 1.8V15A1.8 1.8 0 0 1 15 16.8H5A1.8 1.8 0 0 1 3.2 15V9.8A1.8 1.8 0 0 1 5 8h.8V6.4A4.2 4.2 0 0 1 10 2.2Zm0 1.8A2.4 2.4 0 0 0 7.6 6.4V8h4.8V6.4A2.4 2.4 0 0 0 10 4Zm0 6a1.4 1.4 0 0 0-.8 2.5V14a.8.8 0 1 0 1.6 0v-1.5A1.4 1.4 0 0 0 10 10Z" />
             </svg>
-            <span v-else class="text-[30px] leading-none">#</span>
+            <svg v-else viewBox="0 0 20 20" class="h-4 w-4 shrink-0 fill-current text-indigo-600">
+              <path d="M7 2.5a1 1 0 0 1 .9 1.2L7.6 6h3.1l.4-2.3a1 1 0 0 1 2 .4L12.8 6h2.2a1 1 0 1 1 0 2h-2.6L12 10h2a1 1 0 1 1 0 2h-2.4l-.4 2.3a1 1 0 1 1-2-.4l.3-1.9H6.4l-.4 2.3a1 1 0 1 1-2-.4l.3-1.9H2.9a1 1 0 1 1 0-2h1.8l.4-2H3a1 1 0 1 1 0-2h2.5l.4-2.3A1 1 0 0 1 7 2.5Zm.2 5.5-.4 2h3.1l.4-2H7.2Z" />
+            </svg>
             <span class="truncate">{{ channel.name }}</span>
           </span>
           <Badge v-if="channel.badge">{{ channel.badge }}</Badge>
@@ -271,6 +273,12 @@ const initialsFor = (name: string) =>
 
 const sortChannelsByPrivacy = (items: ChannelItem[]) => {
   return [...items].sort((a, b) => {
+    const aIsGeneral = a.name.trim().toLowerCase() === "general";
+    const bIsGeneral = b.name.trim().toLowerCase() === "general";
+    if (aIsGeneral !== bIsGeneral) {
+      return aIsGeneral ? -1 : 1;
+    }
+
     const privacyRank = Number(Boolean(a.private)) - Number(Boolean(b.private));
     if (privacyRank !== 0) {
       return privacyRank;

@@ -1,5 +1,5 @@
 <template>
-  <div style="min-height:100vh;display:grid;place-items:center;font-family:Inter,Arial,sans-serif;">
+  <div style="min-height:100vh;display:grid;place-items:center;font-family:'DM Sans',Arial,sans-serif;">
     <div style="text-align:center;">
       <h1 style="margin:0 0 8px;font-size:24px;">Something went wrong</h1>
       <p style="margin:0 0 16px;color:#64748b;">Please try again.</p>

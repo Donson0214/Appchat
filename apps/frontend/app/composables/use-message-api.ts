@@ -32,6 +32,13 @@ type ThreadDto = {
 };
 
 type SearchScope = "messages" | "people" | "channels";
+type MentionSuggestion = {
+  id: string;
+  displayName: string;
+  handle: string;
+  avatarUrl: string | null;
+  emailSnippet: string;
+};
 
 const getApiBaseUrl = (rawBaseUrl: string) => {
   const trimmed = (rawBaseUrl || "").trim();
@@ -250,6 +257,64 @@ export const useMessageApi = () => {
     }
   };
 
+  const suggestMentions = async (
+    workspaceId: string,
+    q: string,
+    channelRef?: string,
+  ): Promise<{ items: MentionSuggestion[] }> => {
+    const headers = getAuthHeaders();
+    if (!headers) {
+      return { items: [] };
+    }
+
+    try {
+      return await $fetch<{ items: MentionSuggestion[] }>(`${apiBaseUrl}/workspaces/${workspaceId}/mentions/suggest`, {
+        headers,
+        query: {
+          q,
+          channelRef,
+        },
+      });
+    } catch (error) {
+      await handleUnauthorizedError(error);
+      throw error;
+    }
+  };
+
+  const resolveMentions = async (
+    workspaceId: string,
+    channelRef: string,
+    content: string,
+  ): Promise<{
+    resolved: Array<{ mentionKey: string; userId: string | null; displayName: string; start: number; end: number }>;
+    unresolved: Array<{ mentionKey: string; start: number; end: number }>;
+    ambiguous: Array<{
+      mentionKey: string;
+      start: number;
+      end: number;
+      candidates: MentionSuggestion[];
+    }>;
+  }> => {
+    const headers = getAuthHeaders();
+    if (!headers) {
+      return { resolved: [], unresolved: [], ambiguous: [] };
+    }
+
+    try {
+      return await $fetch(
+        `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/mentions/resolve`,
+        {
+          method: "POST",
+          headers,
+          body: { content },
+        },
+      );
+    } catch (error) {
+      await handleUnauthorizedError(error);
+      throw error;
+    }
+  };
+
   return {
     fetchMessages,
     sendMessage,
@@ -261,5 +326,7 @@ export const useMessageApi = () => {
     unpinMessage,
     fetchPinned,
     searchWorkspace,
+    suggestMentions,
+    resolveMentions,
   };
 };

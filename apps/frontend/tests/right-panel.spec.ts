@@ -11,6 +11,8 @@ const removeReactionMock = vi.fn();
 const pinMessageMock = vi.fn();
 const unpinMessageMock = vi.fn();
 const fetchWorkspacePresenceMock = vi.fn();
+const socketEmitMock = vi.fn();
+const socketHandlers = new Map<string, (payload: unknown) => void>();
 
 vi.mock("../app/composables/use-message-api", () => ({
   useMessageApi: () => ({
@@ -33,8 +35,10 @@ vi.mock("../app/composables/use-presence-api", () => ({
 
 vi.mock("socket.io-client", () => ({
   io: () => ({
-    emit: vi.fn(),
-    on: vi.fn(),
+    emit: socketEmitMock,
+    on: (event: string, handler: (payload: unknown) => void) => {
+      socketHandlers.set(event, handler);
+    },
     disconnect: vi.fn(),
   }),
 }));
@@ -48,6 +52,7 @@ vi.stubGlobal("useRuntimeConfig", () => ({ public: { apiBaseUrl: "https://localh
 describe("RightPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    socketHandlers.clear();
     fetchThreadMock.mockResolvedValue({
       root: {
         id: "m1",
@@ -92,6 +97,108 @@ describe("RightPanel", () => {
     await input.setValue("Reply body");
     await input.trigger("keydown.enter");
     expect(sendReplyMock).toHaveBeenCalled();
+  });
+
+  it("renders thread reply exactly once under socket/local race", async () => {
+    let resolveReply: ((value: unknown) => void) | null = null;
+    sendReplyMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveReply = resolve;
+        }),
+    );
+
+    const wrapper = mount(RightPanel, {
+      props: {
+        isOpen: true,
+        workspaceId: "workspace-1",
+        channelRef: "channel-1",
+        threadMessage: { id: "m1", name: "Don", text: "Root message" },
+      },
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const input = wrapper.find('input[placeholder="Reply in thread..."]');
+    await input.setValue("Race reply");
+    await input.trigger("keydown.enter");
+
+    socketHandlers.get("thread:reply-created")?.({
+      rootMessageId: "m1",
+      reply: {
+        id: "r-race",
+        content: "Race reply",
+        createdAt: new Date().toISOString(),
+        author: { id: "u2", name: "Jane", email: "jane@example.com" },
+        mentions: [],
+        reactions: [],
+        pinned: false,
+      },
+    });
+
+    resolveReply?.({
+      id: "r-race",
+      content: "Race reply",
+      createdAt: new Date().toISOString(),
+      author: { id: "u2", name: "Jane", email: "jane@example.com" },
+      mentions: [],
+      reactions: [],
+      pinned: false,
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const replyArticles = wrapper.findAll("article").filter((item) => item.text().includes("Race reply"));
+    expect(replyArticles.length).toBe(1);
+  });
+
+  it("auto-closes when thread is stale in current channel", async () => {
+    fetchThreadMock.mockRejectedValueOnce({ statusCode: 404 });
+
+    const wrapper = mount(RightPanel, {
+      props: {
+        isOpen: true,
+        workspaceId: "workspace-1",
+        channelRef: "channel-1",
+        threadMessage: { id: "stale-thread", name: "Don", text: "Root message" },
+      },
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(wrapper.emitted("close")).toBeTruthy();
+    expect(wrapper.text()).toContain("This thread is no longer available in the current channel.");
+  });
+
+  it("resets thread draft and rejoins room when channel changes", async () => {
+    const wrapper = mount(RightPanel, {
+      props: {
+        isOpen: true,
+        workspaceId: "workspace-1",
+        channelRef: "channel-1",
+        threadMessage: { id: "m1", name: "Don", text: "Root message" },
+      },
+    });
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const input = wrapper.find('input[placeholder="Reply in thread..."]');
+    await input.setValue("draft to reset");
+
+    await wrapper.setProps({
+      channelRef: "channel-2",
+      threadMessage: { id: "m2", name: "Don", text: "Root message 2" },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const updatedInput = wrapper.find('input[placeholder="Reply in thread..."]');
+    expect((updatedInput.element as HTMLInputElement).value).toBe("");
+    expect(socketEmitMock).toHaveBeenCalledWith("join-room", { workspaceId: "workspace-1", channelRef: "channel-2" });
   });
 });
 

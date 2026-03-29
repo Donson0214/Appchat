@@ -12,6 +12,35 @@ type MentionToken = {
   end: number;
 };
 
+type MentionCandidate = {
+  id: string;
+  displayName: string;
+  handle: string;
+  avatarUrl: string | null;
+  emailSnippet: string;
+};
+
+type MentionResolution = {
+  resolved: Array<{
+    mentionKey: string;
+    userId: string | null;
+    displayName: string;
+    start: number;
+    end: number;
+  }>;
+  unresolved: Array<{
+    mentionKey: string;
+    start: number;
+    end: number;
+  }>;
+  ambiguous: Array<{
+    mentionKey: string;
+    start: number;
+    end: number;
+    candidates: MentionCandidate[];
+  }>;
+};
+
 type MentionAudienceMember = {
   userId: string;
   user: {
@@ -19,6 +48,7 @@ type MentionAudienceMember = {
     email: string;
     fullName: string | null;
     name: string | null;
+    avatarUrl?: string | null;
   };
 };
 
@@ -161,8 +191,18 @@ export class MessageService {
     }
 
     const view = this.toView(reloaded, userId);
+    const { resolution } = await this.resolveMentions(
+      channel.workspaceId,
+      channel.id,
+      channel.type,
+      userId,
+      reloaded.content,
+    );
     this.messageGateway.emitMessageCreated(channel.workspaceId, channel.id, view);
-    return view;
+    return {
+      ...view,
+      mentionResolution: resolution,
+    };
   }
 
   async getThread(workspaceRef: string, channelRef: string, messageId: string, userId: string) {
@@ -400,8 +440,18 @@ export class MessageService {
     }
 
     const view = this.toView(reloaded, userId);
+    const { resolution } = await this.resolveMentions(
+      channel.workspaceId,
+      channel.id,
+      channel.type,
+      userId,
+      reloaded.content,
+    );
     this.messageGateway.emitThreadReplyCreated(channel.workspaceId, channel.id, rootMessageId, view);
-    return view;
+    return {
+      ...view,
+      mentionResolution: resolution,
+    };
   }
 
   async addReaction(
@@ -747,6 +797,106 @@ export class MessageService {
     };
   }
 
+  async suggestMentions(
+    workspaceRef: string,
+    userId: string,
+    q: string,
+    channelRef?: string,
+  ) {
+    const workspace = await this.prisma.workspace.findFirst({
+      where: { OR: [{ id: workspaceRef }, { slug: workspaceRef }] },
+      select: { id: true },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException("Workspace not found");
+    }
+
+    const membership = await this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: workspace.id,
+          userId,
+        },
+      },
+    });
+    if (!membership) {
+      throw new ForbiddenException("You are not a member of this workspace");
+    }
+
+    let channel:
+      | {
+          id: string;
+          workspaceId: string;
+          type: ChannelType;
+        }
+      | null = null;
+    if (channelRef) {
+      channel = await this.resolveChannel(workspaceRef, channelRef);
+      await this.requireChannelAccess(channel.id, channel.workspaceId, channel.type, userId);
+    }
+
+    const audience = channel
+      ? await this.mentionAudience(workspace.id, channel.id, channel.type)
+      : await this.mentionAudience(workspace.id, "", ChannelType.PUBLIC);
+
+    const query = this.normalizeMentionKey(q);
+    const users = audience
+      .filter((member) => member.userId !== userId)
+      .map((member) => ({
+        id: member.user.id,
+        displayName: this.userDisplayName(member.user),
+        handle: this.userHandle(member.user),
+        avatarUrl: member.user.avatarUrl ?? null,
+        emailSnippet: member.user.email,
+        aliases: this.mentionCandidates(member.user),
+      }));
+
+    const filtered = query
+      ? users.filter((item) => item.aliases.some((alias) => alias.includes(query)))
+      : users;
+
+    const dedup = new Map<string, MentionCandidate>();
+    for (const user of filtered) {
+      if (!dedup.has(user.id)) {
+        dedup.set(user.id, {
+          id: user.id,
+          displayName: user.displayName,
+          handle: user.handle,
+          avatarUrl: user.avatarUrl,
+          emailSnippet: user.emailSnippet,
+        });
+      }
+    }
+
+    const sorted = [...dedup.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+    const items = sorted.slice(0, 12);
+
+    if (!query || "channel".includes(query)) {
+      items.unshift({
+        id: "channel",
+        displayName: "Notify everyone in channel",
+        handle: "channel",
+        avatarUrl: null,
+        emailSnippet: "@channel",
+      });
+    }
+
+    return { items: items.slice(0, 12) };
+  }
+
+  async resolveMentionsPreview(
+    workspaceRef: string,
+    channelRef: string,
+    userId: string,
+    content: string,
+  ) {
+    const channel = await this.resolveChannel(workspaceRef, channelRef);
+    await this.requireChannelAccess(channel.id, channel.workspaceId, channel.type, userId);
+    const { resolution } = await this.resolveMentions(channel.workspaceId, channel.id, channel.type, userId, content);
+    return resolution;
+  }
+
   private async resolveChannel(workspaceRef: string, channelRef: string) {
     const workspace = await this.prisma.workspace.findFirst({
       where: {
@@ -829,6 +979,7 @@ export class MessageService {
               email: true,
               fullName: true,
               name: true,
+              avatarUrl: true,
             },
           },
         },
@@ -851,6 +1002,7 @@ export class MessageService {
             email: true,
             fullName: true,
             name: true,
+            avatarUrl: true,
           },
         },
       },
@@ -870,45 +1022,21 @@ export class MessageService {
     authorId: string,
     content: string,
   ) {
-    const tokens = this.extractMentionTokens(content);
-    if (!tokens.length) {
+    const { records, notifyUserIds } = await this.resolveMentions(
+      workspaceId,
+      channelId,
+      channelType,
+      authorId,
+      content,
+    );
+
+    if (!records.length) {
       return;
     }
+
     this.logger.debug(
       `Processing mentions in workspace=${workspaceId}, channel=${channelId}, message=${messageId}`,
     );
-
-    const members = await this.mentionAudience(workspaceId, channelId, channelType);
-    const keyToUserId = new Map<string, string>();
-    for (const member of members) {
-      const candidates = this.mentionCandidates(member.user);
-      for (const candidate of candidates) {
-        if (!keyToUserId.has(candidate)) {
-          keyToUserId.set(candidate, member.user.id);
-        }
-      }
-    }
-
-    const records: Array<{ mentionKey: string; mentionedUserId: string | null }> = [];
-    const notifyUserIds = new Set<string>();
-
-    for (const token of tokens) {
-      if (token.mentionKey === "channel") {
-        for (const member of members) {
-          if (member.userId !== authorId) {
-            notifyUserIds.add(member.userId);
-            records.push({ mentionKey: token.mentionKey, mentionedUserId: member.userId });
-          }
-        }
-        continue;
-      }
-
-      const mentionedUserId = keyToUserId.get(token.mentionKey) ?? null;
-      records.push({ mentionKey: token.mentionKey, mentionedUserId });
-      if (mentionedUserId && mentionedUserId !== authorId) {
-        notifyUserIds.add(mentionedUserId);
-      }
-    }
 
     if (records.length) {
       await this.prisma.$transaction(
@@ -943,13 +1071,114 @@ export class MessageService {
     }
   }
 
+  private async resolveMentions(
+    workspaceId: string,
+    channelId: string,
+    channelType: ChannelType,
+    authorId: string,
+    content: string,
+  ): Promise<{
+    records: Array<{ mentionKey: string; mentionedUserId: string | null }>;
+    notifyUserIds: Set<string>;
+    resolution: MentionResolution;
+  }> {
+    const tokens = this.extractMentionTokens(content);
+    const emptyResolution: MentionResolution = { resolved: [], unresolved: [], ambiguous: [] };
+    if (!tokens.length) {
+      return { records: [], notifyUserIds: new Set<string>(), resolution: emptyResolution };
+    }
+
+    const members = await this.mentionAudience(workspaceId, channelId, channelType);
+    const aliasToUsers = new Map<string, MentionAudienceMember[]>();
+    for (const member of members) {
+      const aliases = this.mentionCandidates(member.user);
+      for (const alias of aliases) {
+        const list = aliasToUsers.get(alias) ?? [];
+        list.push(member);
+        aliasToUsers.set(alias, list);
+      }
+    }
+
+    const records: Array<{ mentionKey: string; mentionedUserId: string | null }> = [];
+    const notifyUserIds = new Set<string>();
+    const resolution: MentionResolution = { resolved: [], unresolved: [], ambiguous: [] };
+
+    for (const token of tokens) {
+      if (token.mentionKey === "channel") {
+        resolution.resolved.push({
+          mentionKey: token.mentionKey,
+          userId: null,
+          displayName: "channel",
+          start: token.start,
+          end: token.end,
+        });
+        for (const member of members) {
+          if (member.userId !== authorId) {
+            notifyUserIds.add(member.userId);
+            records.push({ mentionKey: token.mentionKey, mentionedUserId: member.userId });
+          }
+        }
+        continue;
+      }
+
+      const matched = aliasToUsers.get(token.mentionKey) ?? [];
+      const uniqueByUserId = new Map<string, MentionAudienceMember>();
+      for (const member of matched) {
+        if (!uniqueByUserId.has(member.user.id)) {
+          uniqueByUserId.set(member.user.id, member);
+        }
+      }
+      const candidates = [...uniqueByUserId.values()];
+
+      if (candidates.length === 1) {
+        const target = candidates[0];
+        records.push({ mentionKey: token.mentionKey, mentionedUserId: target.user.id });
+        if (target.user.id !== authorId) {
+          notifyUserIds.add(target.user.id);
+        }
+        resolution.resolved.push({
+          mentionKey: token.mentionKey,
+          userId: target.user.id,
+          displayName: this.userDisplayName(target.user),
+          start: token.start,
+          end: token.end,
+        });
+        continue;
+      }
+
+      records.push({ mentionKey: token.mentionKey, mentionedUserId: null });
+      if (candidates.length === 0) {
+        resolution.unresolved.push({
+          mentionKey: token.mentionKey,
+          start: token.start,
+          end: token.end,
+        });
+      } else {
+        resolution.ambiguous.push({
+          mentionKey: token.mentionKey,
+          start: token.start,
+          end: token.end,
+          candidates: candidates.slice(0, 8).map((member) => ({
+            id: member.user.id,
+            displayName: this.userDisplayName(member.user),
+            handle: this.userHandle(member.user),
+            avatarUrl: member.user.avatarUrl ?? null,
+            emailSnippet: member.user.email,
+          })),
+        });
+      }
+    }
+
+    return { records, notifyUserIds, resolution };
+  }
+
   private extractMentionTokens(content: string): MentionToken[] {
     const regex = /(^|\s)@([a-zA-Z0-9._-]{2,64})/g;
     const tokens: MentionToken[] = [];
     let match: RegExpExecArray | null;
     while ((match = regex.exec(content)) !== null) {
       const rawPrefix = match[1] ?? "";
-      const mentionKey = (match[2] ?? "").toLowerCase().trim();
+      const mentionKey = this.normalizeMentionKey(match[2] ?? "");
       if (!mentionKey) {
         continue;
       }
@@ -960,13 +1189,35 @@ export class MessageService {
     return tokens;
   }
 
-  private mentionCandidates(user: { email: string; fullName: string | null; name: string | null }) {
-    const fromEmail = user.email.split("@")[0]?.toLowerCase().trim();
-    const fromName = (user.fullName || user.name || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "");
+  private normalizeMentionKey(input: string) {
+    return input.toLowerCase().trim().replace(/^@+/, "").replace(/[^a-z0-9._-]/g, "");
+  }
 
-    return [fromEmail, fromName].filter(Boolean);
+  private userDisplayName(user: { email: string; fullName: string | null; name: string | null }) {
+    return user.fullName || user.name || user.email.split("@")[0] || "User";
+  }
+
+  private userHandle(user: { email: string; fullName: string | null; name: string | null }) {
+    const fromName = (user.name || "").trim();
+    if (fromName && !fromName.includes(" ")) {
+      return fromName.toLowerCase();
+    }
+    return user.email.split("@")[0]?.toLowerCase().trim() || "user";
+  }
+
+  private mentionCandidates(user: { email: string; fullName: string | null; name: string | null }) {
+    const emailLocal = this.normalizeMentionKey(user.email.split("@")[0] || "");
+    const display = this.userDisplayName(user);
+    const normalizedFull = display.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const parts = display
+      .toLowerCase()
+      .split(/[^a-z0-9]+/g)
+      .filter(Boolean);
+    const first = parts[0] || "";
+    const firstLast = parts.length >= 2 ? `${parts[0]}.${parts[parts.length - 1]}` : "";
+    const explicitHandle = this.normalizeMentionKey(user.name || "");
+
+    return [...new Set([emailLocal, normalizedFull, first, firstLast, explicitHandle].filter(Boolean))];
   }
 
   private buildMentionEntities(
@@ -1071,6 +1322,14 @@ export class MessageService {
   ) {
     const authorName =
       message.User.fullName || message.User.name || message.User.email.split("@")[0] || "User";
+    const mentionEntities = this.buildMentionEntities(message.content, message.MessageMention);
+    const unresolved = mentionEntities
+      .filter((item) => !item.userId && item.mentionKey !== "channel")
+      .map((item) => ({
+        mentionKey: item.mentionKey,
+        start: item.start,
+        end: item.end,
+      }));
 
     return {
       id: message.id,
@@ -1082,7 +1341,12 @@ export class MessageService {
         name: authorName,
         email: message.User.email,
       },
-      mentions: this.buildMentionEntities(message.content, message.MessageMention),
+      mentions: mentionEntities,
+      mentionResolution: {
+        resolved: mentionEntities.filter((item) => item.userId || item.mentionKey === "channel"),
+        unresolved,
+        ambiguous: [],
+      },
       reactions: this.buildReactionEntities(message.MessageReaction, currentUserId),
       repliesCount: message.Replies.length,
       pinned: message.PinnedMessage.length > 0,

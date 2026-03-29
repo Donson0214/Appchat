@@ -37,6 +37,12 @@ export default defineNuxtConfig({
   vite: {
     plugins: [mkcert()],
   },
-  css: ["~/assets/css/main.css"],
+  css: [
+    "@fontsource/dm-sans/400.css",
+    "@fontsource/dm-sans/500.css",
+    "@fontsource/dm-sans/600.css",
+    "@fontsource/dm-sans/700.css",
+    "~/assets/css/main.css",
+  ],
   modules: ["@nuxtjs/tailwindcss"],
 });
