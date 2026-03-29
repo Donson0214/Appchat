@@ -8,10 +8,12 @@ type Workspace = {
   inviteCode?: string;
 };
 
+import { getAuthHeadersOrNull, handleUnauthorizedError } from "../utils/auth-session";
+
 const FALLBACK_WORKSPACE: Workspace = {
-  id: "local-default",
-  name: "Acme Inc",
-  slug: "acme",
+  id: "workspace-default",
+  name: "Workspace",
+  slug: "workspace",
   createdAt: new Date(0).toISOString(),
 };
 
@@ -30,12 +32,7 @@ export const useWorkspace = () => {
     return trimmed;
   })(config.public.apiBaseUrl);
 
-  const authHeaders = () => {
-    if (!process.client) return undefined;
-    const token = localStorage.getItem("appchat_access_token");
-    if (!token) return undefined;
-    return { Authorization: `Bearer ${token}` };
-  };
+  const authHeaders = () => getAuthHeadersOrNull() ?? undefined;
 
   const fetchMyWorkspaces = async () => {
     const headers = authHeaders();
@@ -45,7 +42,8 @@ export const useWorkspace = () => {
       const result = await $fetch<Workspace[]>(`${apiBaseUrl}/workspaces/me`, { headers });
       workspaces.value = result;
       return result;
-    } catch {
+    } catch (error) {
+      await handleUnauthorizedError(error);
       return [];
     }
   };
@@ -88,6 +86,9 @@ export const useWorkspace = () => {
         name: parsed.name || FALLBACK_WORKSPACE.name,
         slug: parsed.slug || FALLBACK_WORKSPACE.slug,
         createdAt: parsed.createdAt || new Date().toISOString(),
+        updatedAt: parsed.updatedAt,
+        role: parsed.role,
+        inviteCode: parsed.inviteCode,
       };
     } catch {
       workspace.value = FALLBACK_WORKSPACE;

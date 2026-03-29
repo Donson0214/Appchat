@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import { PrismaService } from "../../database/prisma/prisma.service";
 import { CreateWorkspaceDto } from "./dto/create-workspace.dto";
 import { JoinWorkspaceDto } from "./dto/join-workspace.dto";
+import { OpenDirectMessageDto } from "./dto/open-direct-message.dto";
 
 @Injectable()
 export class WorkspaceService {
@@ -123,6 +124,7 @@ export class WorkspaceService {
       name: workspace.name,
       slug: workspace.slug,
       role: "MEMBER",
+      inviteCode: null,
       createdAt: workspace.createdAt,
       updatedAt: workspace.updatedAt,
     };
@@ -140,9 +142,132 @@ export class WorkspaceService {
       name: membership.workspace.name,
       slug: membership.workspace.slug,
       role: membership.role,
+      inviteCode: membership.role === "ADMIN" ? membership.workspace.inviteCode : null,
       createdAt: membership.workspace.createdAt,
       updatedAt: membership.workspace.updatedAt,
     }));
+  }
+
+  async openDirectMessage(workspaceRef: string, requesterId: string, dto: OpenDirectMessageDto) {
+    if (dto.memberId === requesterId) {
+      throw new BadRequestException("Cannot open direct message with yourself");
+    }
+
+    const workspace = await this.prisma.workspace.findFirst({
+      where: {
+        OR: [{ id: workspaceRef }, { slug: workspaceRef }],
+      },
+      select: { id: true },
+    });
+
+    if (!workspace) {
+      throw new BadRequestException("Workspace not found");
+    }
+
+    const [requesterMembership, targetMembership] = await Promise.all([
+      this.prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: workspace.id,
+            userId: requesterId,
+          },
+        },
+      }),
+      this.prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: {
+            workspaceId: workspace.id,
+            userId: dto.memberId,
+          },
+        },
+      }),
+    ]);
+
+    if (!requesterMembership || !targetMembership) {
+      throw new BadRequestException("Both members must belong to this workspace");
+    }
+
+    const dmName = this.buildDirectMessageChannelName(requesterId, dto.memberId);
+    const now = new Date();
+
+    const channel = await this.prisma.channel.upsert({
+      where: {
+        workspaceId_name: {
+          workspaceId: workspace.id,
+          name: dmName,
+        },
+      },
+      create: {
+        id: randomUUID(),
+        workspaceId: workspace.id,
+        name: dmName,
+        description: "Direct message",
+        type: ChannelType.PRIVATE,
+        createdById: requesterId,
+        updatedAt: now,
+      },
+      update: {
+        updatedAt: now,
+      },
+      select: {
+        id: true,
+        name: true,
+        workspaceId: true,
+      },
+    });
+
+    await Promise.all([
+      this.prisma.channelMember.upsert({
+        where: {
+          channelId_userId: {
+            channelId: channel.id,
+            userId: requesterId,
+          },
+        },
+        create: {
+          id: randomUUID(),
+          channelId: channel.id,
+          userId: requesterId,
+        },
+        update: {},
+      }),
+      this.prisma.channelMember.upsert({
+        where: {
+          channelId_userId: {
+            channelId: channel.id,
+            userId: dto.memberId,
+          },
+        },
+        create: {
+          id: randomUUID(),
+          channelId: channel.id,
+          userId: dto.memberId,
+        },
+        update: {},
+      }),
+    ]);
+
+    const member = await this.prisma.user.findUnique({
+      where: { id: dto.memberId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        name: true,
+      },
+    });
+
+    return {
+      channelId: channel.id,
+      channelRef: channel.id,
+      member: member
+        ? {
+            id: member.id,
+            name: member.fullName || member.name || member.email.split("@")[0] || "Member",
+            email: member.email,
+          }
+        : null,
+    };
   }
 
   private normalizeSlug(input: string): string {
@@ -181,5 +306,10 @@ export class WorkspaceService {
     } while (await this.prisma.workspace.findUnique({ where: { inviteCode: candidate } }));
 
     return candidate;
+  }
+
+  private buildDirectMessageChannelName(leftUserId: string, rightUserId: string) {
+    const [a, b] = [leftUserId, rightUserId].sort();
+    return `dm-${a}-${b}`.toLowerCase();
   }
 }

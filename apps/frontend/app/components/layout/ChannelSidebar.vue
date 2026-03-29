@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="flex-1 overflow-y-auto px-2.5 py-3">
     <nav class="space-y-1 text-[16px] text-[#4b5565]">
       <button class="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors duration-150 hover:bg-slate-200/70">
@@ -18,6 +18,10 @@
         <Badge>18</Badge>
       </button>
     </nav>
+
+    <p v-if="sidebarError" class="mt-3 rounded-md border border-red-200 bg-red-50 px-2.5 py-2 text-xs text-red-700">
+      {{ sidebarError }}
+    </p>
 
     <div class="mt-5">
       <p class="mb-1.5 flex items-center gap-2 px-2 text-[13px] font-bold tracking-[0.08em] text-[#64748b]">
@@ -41,7 +45,7 @@
               <path d="M10 1.8a4 4 0 0 0-4 4v2H5a2 2 0 0 0-2 2v6.4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9.8a2 2 0 0 0-2-2h-1v-2a4 4 0 0 0-4-4Zm2.3 6V5.8a2.3 2.3 0 0 0-4.6 0v2h4.6Z" />
             </svg>
             <span v-else class="text-[30px] leading-none">#</span>
-            <span class="truncate" :class="channel.private ? '' : ''">{{ channel.name }}</span>
+            <span class="truncate">{{ channel.name }}</span>
           </span>
           <Badge v-if="channel.badge">{{ channel.badge }}</Badge>
         </button>
@@ -84,12 +88,6 @@
             </span>
             <span class="text-[17px]" :class="activeDirectMessage === person.id ? 'text-indigo-600' : 'text-slate-700'">{{ person.name }}</span>
           </span>
-          <Badge v-if="person.unread">{{ person.unread }}</Badge>
-        </button>
-
-        <button class="flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-slate-400 transition-colors duration-150 hover:bg-slate-200/70">
-          <span class="text-[20px] leading-none">+</span>
-          <span>New direct message</span>
         </button>
       </div>
     </div>
@@ -159,10 +157,15 @@ import Avatar from "../ui/Avatar.vue";
 import Badge from "../ui/Badge.vue";
 import { useWorkspace } from "../../composables/use-workspace";
 import { useChannelApi } from "../../composables/use-channel-api";
+import { usePresenceApi } from "../../composables/use-presence-api";
+import { useDmApi } from "../../composables/use-dm-api";
 
 const route = useRoute();
 const router = useRouter();
 const { workspace, loadWorkspace } = useWorkspace();
+const { fetchChannels, createChannel: createChannelApi, inviteMember } = useChannelApi();
+const { fetchWorkspacePresence } = usePresenceApi();
+const { openDirectMessage } = useDmApi();
 
 type ChannelItem = {
   id?: string;
@@ -173,19 +176,23 @@ type ChannelItem = {
   custom?: boolean;
 };
 
-const directMessages = [
-  { id: "sarah-chen", name: "Sarah Chen", initials: "SC", color: "bg-pink-500", statusColor: "bg-emerald-500", unread: 2 },
-  { id: "marcus-webb", name: "Marcus Webb", initials: "MW", color: "bg-emerald-500", statusColor: "bg-emerald-500" },
-  { id: "jordan-kim", name: "Jordan Kim", initials: "JK", color: "bg-amber-500", statusColor: "bg-amber-400" },
-  { id: "priya-patel", name: "Priya Patel", initials: "PP", color: "bg-indigo-500", statusColor: "bg-red-500" },
-];
+type DirectMessageItem = {
+  id: string;
+  name: string;
+  initials: string;
+  color: string;
+  statusColor: string;
+};
 
 const baseChannels: ChannelItem[] = [
-  { id: "general", slug: "general", name: "general", badge: 3 },
-  { id: "announcements", slug: "announcements", name: "announcements", badge: 1 },
+  { id: "general", slug: "general", name: "general" },
+  { id: "announcements", slug: "announcements", name: "announcements" },
 ];
 
 const customChannels = ref<ChannelItem[]>([]);
+const directMessages = ref<DirectMessageItem[]>([]);
+const sidebarError = ref("");
+
 const isCreateChannelOpen = ref(false);
 const newChannelName = ref("");
 const newChannelPrivate = ref(false);
@@ -196,15 +203,44 @@ const createChannelSubmitting = ref(false);
 const activeChannel = computed(() => String(route.params.channelId ?? "general"));
 const activeDirectMessage = computed(() => String(route.params.memberId ?? ""));
 const currentWorkspaceRef = computed(() => String(route.params.workspaceId ?? workspace.value.id ?? ""));
-
 const channels = computed(() => [...baseChannels, ...customChannels.value]);
-const { fetchChannels, createChannel: createChannelApi, inviteMember } = useChannelApi();
 
-const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.id || "acme"}`);
 const isClient = typeof window !== "undefined";
+const workspaceStorageKey = computed(() => `appchat_channels_${workspace.value.id || "workspace"}`);
 
-const loadCustomChannels = () => {
-  if (!isClient) return;
+const statusToDot = (status: string) => {
+  switch (status) {
+    case "online":
+      return "bg-emerald-500";
+    case "away":
+      return "bg-amber-400";
+    case "dnd":
+      return "bg-red-500";
+    default:
+      return "bg-slate-400";
+  }
+};
+
+const palette = ["bg-pink-500", "bg-emerald-500", "bg-amber-500", "bg-indigo-500", "bg-cyan-500"];
+
+const nameColor = (name: string) => {
+  const seed = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return palette[seed % palette.length];
+};
+
+const initialsFor = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+const loadCachedChannels = () => {
+  if (!isClient) {
+    return;
+  }
+
   const raw = localStorage.getItem(workspaceStorageKey.value);
   if (!raw) {
     customChannels.value = [];
@@ -219,8 +255,10 @@ const loadCustomChannels = () => {
   }
 };
 
-const saveCustomChannels = () => {
-  if (!isClient) return;
+const saveCachedChannels = () => {
+  if (!isClient) {
+    return;
+  }
   localStorage.setItem(workspaceStorageKey.value, JSON.stringify(customChannels.value));
 };
 
@@ -234,13 +272,14 @@ const closeCreateModal = () => {
 };
 
 const createChannel = async () => {
-  if (!workspace.value.id || workspace.value.id === "local-default") {
+  if (!workspace.value.id || workspace.value.id === "workspace-default") {
     createChannelError.value = "Workspace is not ready yet. Please refresh and try again.";
     return;
   }
 
   createChannelSubmitting.value = true;
   createChannelError.value = "";
+  sidebarError.value = "";
 
   try {
     const created = await createChannelApi(workspace.value.id, {
@@ -260,27 +299,24 @@ const createChannel = async () => {
       ...customChannels.value.filter((item) => item.slug !== channelFromApi.slug),
       channelFromApi,
     ];
-    saveCustomChannels();
+    saveCachedChannels();
 
-    const emails = [...new Set(
-      inviteEmailsRaw.value
-      .split(",")
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean),
-    )];
+    const emails = [
+      ...new Set(
+        inviteEmailsRaw.value
+          .split(",")
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ];
 
     for (const email of emails) {
-      try {
-        await inviteMember(workspace.value.id, created.id, email);
-      } catch {
-        // Keep channel creation successful even if one invite fails.
-      }
+      await inviteMember(workspace.value.id, created.id, email);
     }
 
     await refreshChannelsFromApi();
     closeCreateModal();
     await router.push(`/workspace/${currentWorkspaceRef.value}/channel/${created.id}`);
-    return;
   } catch {
     createChannelError.value = "Failed to create channel. Please try again.";
   } finally {
@@ -292,43 +328,72 @@ const goChannel = async (channel: ChannelItem) => {
   await router.push(`/workspace/${currentWorkspaceRef.value}/channel/${channel.id || channel.slug}`);
 };
 
-const goDirectMessage = async (person: (typeof directMessages)[number]) => {
-  await router.push(`/workspace/${currentWorkspaceRef.value}/dm/${person.id}`);
+const goDirectMessage = async (person: DirectMessageItem) => {
+  sidebarError.value = "";
+  try {
+    await openDirectMessage(currentWorkspaceRef.value, person.id);
+    await router.push(`/workspace/${currentWorkspaceRef.value}/dm/${person.id}`);
+  } catch {
+    sidebarError.value = "Unable to open direct message.";
+  }
 };
 
-onMounted(() => {
-  loadWorkspace();
-  loadCustomChannels();
-  void refreshChannelsFromApi();
+const refreshChannelsFromApi = async () => {
+  if (!workspace.value.id || workspace.value.id === "workspace-default") {
+    return;
+  }
+
+  const fromApi = await fetchChannels(workspace.value.id);
+  const normalized: ChannelItem[] = fromApi.map((item) => ({
+    id: item.id,
+    slug: item.slug,
+    name: item.name,
+    private: item.private,
+    custom: !baseChannels.some((base) => base.name === item.name),
+  }));
+
+  customChannels.value = normalized.filter((item) => item.custom);
+  saveCachedChannels();
+};
+
+const refreshDirectMessages = async () => {
+  if (!workspace.value.id || workspace.value.id === "workspace-default") {
+    directMessages.value = [];
+    return;
+  }
+
+  const members = await fetchWorkspacePresence(workspace.value.id);
+  directMessages.value = members
+    .filter((member) => !member.isSelf)
+    .map((member) => ({
+      id: member.id,
+      name: member.name,
+      initials: initialsFor(member.name),
+      color: nameColor(member.name),
+      statusColor: statusToDot(member.status),
+    }));
+};
+
+const refreshSidebarData = async () => {
+  sidebarError.value = "";
+  loadCachedChannels();
+
+  try {
+    await Promise.all([refreshChannelsFromApi(), refreshDirectMessages()]);
+  } catch {
+    sidebarError.value = "Some sidebar data failed to load.";
+  }
+};
+
+onMounted(async () => {
+  await loadWorkspace();
+  await refreshSidebarData();
 });
 
 watch(
   () => workspace.value.id,
-  () => {
-    loadCustomChannels();
-    void refreshChannelsFromApi();
+  async () => {
+    await refreshSidebarData();
   },
 );
-
-const refreshChannelsFromApi = async () => {
-  if (!workspace.value.id || workspace.value.id === "local-default") {
-    return;
-  }
-
-  try {
-    const fromApi = await fetchChannels(workspace.value.id);
-    const normalized: ChannelItem[] = fromApi.map((item) => ({
-      id: item.id,
-      slug: item.slug,
-      name: item.name,
-      private: item.private,
-      custom: !baseChannels.some((base) => base.name === item.name),
-    }));
-
-    customChannels.value = normalized.filter((item) => item.custom);
-    saveCustomChannels();
-  } catch {
-    // Keep local fallback for offline/degraded mode.
-  }
-};
 </script>
