@@ -342,12 +342,29 @@ const closeThreadPanel = () => {
 };
 
 const handleMentionClick = (mention: { userId: string | null; displayName: string; mentionKey: string }) => {
-  selectedProfileHint.value = { userId: mention.userId, name: mention.displayName };
+  const nextUserId = mention.userId ?? null;
+  const nextName = mention.displayName;
+  if (
+    selectedProfileHint.value?.userId === nextUserId &&
+    selectedProfileHint.value?.name === nextName
+  ) {
+    isThreadPanelOpen.value = true;
+    return;
+  }
+  selectedProfileHint.value = { userId: nextUserId, name: nextName };
   isThreadPanelOpen.value = true;
 };
 
 const handleProfileSelected = (profile: { userId: string | null; name: string }) => {
-  selectedProfileHint.value = { userId: profile.userId, name: profile.name };
+  const nextUserId = profile.userId ?? null;
+  const nextName = profile.name;
+  if (
+    selectedProfileHint.value?.userId === nextUserId &&
+    selectedProfileHint.value?.name === nextName
+  ) {
+    return;
+  }
+  selectedProfileHint.value = { userId: nextUserId, name: nextName };
 };
 
 const handleToggleReaction = async (payload: { messageId: string; emoji: string }) => {

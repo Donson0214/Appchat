@@ -250,6 +250,8 @@ const replyDraft = ref("");
 
 const profileLoading = ref(false);
 const profileCard = ref<{ name: string; email: string; role: string; status: PresenceStatus } | null>(null);
+const profileRequestId = ref(0);
+const lastEmittedProfileKey = ref("");
 
 const pinsLoading = ref(false);
 const pins = ref<Array<{ id: string; content: string; author: { name: string } }>>([]);
@@ -261,6 +263,7 @@ const searchResults = ref<unknown[]>([]);
 
 const unreadSocketRef = ref<Socket | null>(null);
 const activeSocketScope = ref("");
+const PROFILE_LOAD_TIMEOUT_MS = 8000;
 
 const { fetchThread, sendReply, addReaction, removeReaction, pinMessage, unpinMessage, fetchPinned, searchWorkspace } = useMessageApi();
 const { fetchWorkspacePresence } = usePresenceApi();
@@ -443,13 +446,42 @@ const runSearch = async () => {
 
 const renderSearchResult = (item: unknown) => JSON.stringify(item, null, 1);
 
+const withTimeout = async <T>(promise: Promise<T>, ms: number) => {
+  return await Promise.race<T>([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error("PROFILE_FETCH_TIMEOUT")), ms);
+    }),
+  ]);
+};
+
 const loadProfile = async () => {
+  const requestId = profileRequestId.value + 1;
+  profileRequestId.value = requestId;
   profileLoading.value = true;
   panelError.value = "";
 
+  if (!props.workspaceId) {
+    profileCard.value = null;
+    panelError.value = "Unable to load profile.";
+    profileLoading.value = false;
+    return;
+  }
+
   const targetUserId = props.profileHint?.userId || props.threadMessage?.authorId || threadRoot.value?.author.id;
+  const targetName = props.profileHint?.name || "";
+  if (!targetUserId && !targetName) {
+    profileCard.value = null;
+    profileLoading.value = false;
+    return;
+  }
+
   try {
-    const members = await fetchWorkspacePresence(props.workspaceId);
+    const members = await withTimeout(fetchWorkspacePresence(props.workspaceId), PROFILE_LOAD_TIMEOUT_MS);
+    if (requestId !== profileRequestId.value) {
+      return;
+    }
+
     const found = members.find((member) => member.id === targetUserId) ?? members.find((member) => member.name === props.profileHint?.name);
     if (!found) {
       profileCard.value = null;
@@ -462,11 +494,21 @@ const loadProfile = async () => {
       role: found.role,
       status: found.status,
     };
-    emit("profile-selected", { userId: found.id, name: found.name });
+
+    const profileKey = `${found.id}:${found.name}`;
+    if (lastEmittedProfileKey.value !== profileKey) {
+      lastEmittedProfileKey.value = profileKey;
+      emit("profile-selected", { userId: found.id, name: found.name });
+    }
   } catch {
-    panelError.value = "Unable to load profile.";
+    if (requestId !== profileRequestId.value) {
+      return;
+    }
+    panelError.value = "Unable to load profile. Please try again.";
   } finally {
-    profileLoading.value = false;
+    if (requestId === profileRequestId.value) {
+      profileLoading.value = false;
+    }
   }
 };
 
@@ -560,13 +602,13 @@ watch(
 );
 
 watch(
-  () => props.profileHint,
+  () => [props.profileHint?.userId ?? "", props.profileHint?.name ?? ""],
   async () => {
     if (!props.profileHint) return;
+    if (!props.isOpen) return;
     activeTab.value = "Profile";
     await loadProfile();
   },
-  { deep: true },
 );
 
 watch(
