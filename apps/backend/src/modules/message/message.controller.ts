@@ -155,4 +155,37 @@ export class MessageController {
     const normalizedScope = scope === "people" || scope === "channels" ? scope : "messages";
     return this.messageService.searchWorkspace(workspaceId, userId, q ?? "", normalizedScope);
   }
+
+  @Get("workspaces/:workspaceId/mentions/suggest")
+  async suggestMentions(
+    @Param("workspaceId") workspaceId: string,
+    @Query("q") q: string | undefined,
+    @Query("channelRef") channelRef: string | undefined,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException("Unauthorized");
+    }
+    return this.messageService.suggestMentions(workspaceId, userId, q ?? "", channelRef);
+  }
+
+  @Post("workspaces/:workspaceId/channels/:channelRef/mentions/resolve")
+  async resolveMentions(
+    @Param("workspaceId") workspaceId: string,
+    @Param("channelRef") channelRef: string,
+    @Body() body: { content?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException("Unauthorized");
+    }
+    return this.messageService.resolveMentionsPreview(
+      workspaceId,
+      channelRef,
+      userId,
+      body.content?.toString() ?? "",
+    );
+  }
 }

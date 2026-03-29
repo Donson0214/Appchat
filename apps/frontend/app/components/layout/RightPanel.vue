@@ -260,6 +260,7 @@ const searchScope = ref<"messages" | "people" | "channels">("messages");
 const searchResults = ref<unknown[]>([]);
 
 const unreadSocketRef = ref<Socket | null>(null);
+const activeSocketScope = ref("");
 
 const { fetchThread, sendReply, addReaction, removeReaction, pinMessage, unpinMessage, fetchPinned, searchWorkspace } = useMessageApi();
 const { fetchWorkspacePresence } = usePresenceApi();
@@ -284,6 +285,19 @@ const toTime = (iso: string) => {
 
 const currentThreadRootId = computed(() => props.threadMessage?.id || "");
 
+const resetThreadState = () => {
+  threadRoot.value = null;
+  threadReplies.value = [];
+  replyDraft.value = "";
+};
+
+const addReplyOnce = (reply: UiMessage) => {
+  if (threadReplies.value.some((item) => item.id === reply.id)) {
+    return;
+  }
+  threadReplies.value = [...threadReplies.value, reply];
+};
+
 const toUi = (dto: {
   id: string;
   content: string;
@@ -307,8 +321,7 @@ const toUi = (dto: {
 
 const loadThread = async () => {
   if (!props.workspaceId || !props.channelRef || !props.threadMessage?.id) {
-    threadRoot.value = null;
-    threadReplies.value = [];
+    resetThreadState();
     return;
   }
 
@@ -318,8 +331,18 @@ const loadThread = async () => {
     const payload = await fetchThread(props.workspaceId, props.channelRef, props.threadMessage.id);
     threadRoot.value = toUi(payload.root);
     threadReplies.value = payload.replies.map(toUi);
-  } catch {
-    panelError.value = "Unable to load thread.";
+  } catch (error: unknown) {
+    const statusCode = typeof error === "object" && error && "statusCode" in error ? Number((error as { statusCode?: number }).statusCode) : 0;
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: number }).status) : 0;
+    const code = statusCode || status;
+    const staleThread = code === 404 || code === 403;
+    panelError.value = staleThread
+      ? "This thread is no longer available in the current channel."
+      : "Unable to load thread.";
+    if (staleThread) {
+      resetThreadState();
+      emit("close");
+    }
   } finally {
     threadLoading.value = false;
   }
@@ -330,14 +353,30 @@ const submitReply = async () => {
   if (!content || !currentThreadRootId.value) {
     return;
   }
+  if (!threadRoot.value || threadRoot.value.id !== currentThreadRootId.value) {
+    panelError.value = "Thread is out of date. Please reopen the thread.";
+    resetThreadState();
+    emit("close");
+    return;
+  }
 
   panelError.value = "";
   try {
     const created = await sendReply(props.workspaceId, props.channelRef, currentThreadRootId.value, content);
-    threadReplies.value = [...threadReplies.value, toUi(created)];
+    addReplyOnce(toUi(created));
     replyDraft.value = "";
-  } catch {
-    panelError.value = "Unable to send reply.";
+  } catch (error: unknown) {
+    const statusCode = typeof error === "object" && error && "statusCode" in error ? Number((error as { statusCode?: number }).statusCode) : 0;
+    const status = typeof error === "object" && error && "status" in error ? Number((error as { status?: number }).status) : 0;
+    const code = statusCode || status;
+    const staleThread = code === 404 || code === 403;
+    panelError.value = staleThread
+      ? "This thread is no longer available in the current channel."
+      : "Unable to send reply.";
+    if (staleThread) {
+      resetThreadState();
+      emit("close");
+    }
   }
 };
 
@@ -451,59 +490,65 @@ const onMentionClick = (mention: { userId: string | null; displayName: string; m
 const connectRealtime = () => {
   if (typeof window === "undefined") return;
   if (!props.workspaceId || !props.channelRef) return;
-  if (unreadSocketRef.value) return;
-
+  const scope = `${props.workspaceId}:${props.channelRef}`;
   const token = getValidAccessToken();
   if (!token) return;
+  if (unreadSocketRef.value && activeSocketScope.value !== scope) {
+    unreadSocketRef.value.disconnect();
+    unreadSocketRef.value = null;
+    activeSocketScope.value = "";
+  }
 
   const config = useRuntimeConfig();
   const base = (config.public.apiBaseUrl || "").trim() || "https://localhost:3000";
-  unreadSocketRef.value = io(`${base}/ws`, {
-    transports: ["websocket"],
-    withCredentials: true,
-    auth: { token },
-    extraHeaders: { Authorization: `Bearer ${token}` },
-  });
-  unreadSocketRef.value.emit("join-room", { workspaceId: props.workspaceId, channelRef: props.channelRef });
+  if (!unreadSocketRef.value) {
+    unreadSocketRef.value = io(`${base}/ws`, {
+      transports: ["websocket"],
+      withCredentials: true,
+      auth: { token },
+      extraHeaders: { Authorization: `Bearer ${token}` },
+    });
 
-  unreadSocketRef.value.on("thread:reply-created", (payload: { rootMessageId: string; reply: unknown }) => {
-    if (payload.rootMessageId !== currentThreadRootId.value) {
-      return;
-    }
-    const reply = toUi(payload.reply as any);
-    if (!threadReplies.value.some((item) => item.id === reply.id)) {
-      threadReplies.value = [...threadReplies.value, reply];
-    }
-  });
-
-  unreadSocketRef.value.on(
-    "message:reaction-updated",
-    (payload: { messageId: string; reactions: Array<{ emoji: string; count: number; reactedByMe: boolean }> }) => {
-      if (threadRoot.value?.id === payload.messageId) {
-        threadRoot.value = { ...threadRoot.value, reactions: payload.reactions };
+    unreadSocketRef.value.on("thread:reply-created", (payload: { rootMessageId: string; reply: unknown }) => {
+      if (payload.rootMessageId !== currentThreadRootId.value) {
+        return;
       }
-      threadReplies.value = threadReplies.value.map((item) =>
-        item.id === payload.messageId ? { ...item, reactions: payload.reactions } : item,
-      );
-    },
-  );
+      addReplyOnce(toUi(payload.reply as any));
+    });
 
-  unreadSocketRef.value.on("message:pinned", (payload: { messageId: string }) => {
-    if (threadRoot.value?.id === payload.messageId) {
-      threadRoot.value = { ...threadRoot.value, pinned: true };
-    }
-  });
+    unreadSocketRef.value.on(
+      "message:reaction-updated",
+      (payload: { messageId: string; reactions: Array<{ emoji: string; count: number; reactedByMe: boolean }> }) => {
+        if (threadRoot.value?.id === payload.messageId) {
+          threadRoot.value = { ...threadRoot.value, reactions: payload.reactions };
+        }
+        threadReplies.value = threadReplies.value.map((item) =>
+          item.id === payload.messageId ? { ...item, reactions: payload.reactions } : item,
+        );
+      },
+    );
 
-  unreadSocketRef.value.on("message:unpinned", (payload: { messageId: string }) => {
-    if (threadRoot.value?.id === payload.messageId) {
-      threadRoot.value = { ...threadRoot.value, pinned: false };
-    }
-  });
+    unreadSocketRef.value.on("message:pinned", (payload: { messageId: string }) => {
+      if (threadRoot.value?.id === payload.messageId) {
+        threadRoot.value = { ...threadRoot.value, pinned: true };
+      }
+    });
+
+    unreadSocketRef.value.on("message:unpinned", (payload: { messageId: string }) => {
+      if (threadRoot.value?.id === payload.messageId) {
+        threadRoot.value = { ...threadRoot.value, pinned: false };
+      }
+    });
+  }
+
+  unreadSocketRef.value.emit("join-room", { workspaceId: props.workspaceId, channelRef: props.channelRef });
+  activeSocketScope.value = scope;
 };
 
 watch(
   () => [props.workspaceId, props.channelRef, props.threadMessage?.id],
   async () => {
+    resetThreadState();
     if (!props.isOpen) {
       return;
     }
@@ -528,6 +573,11 @@ watch(
   () => props.isOpen,
   async (open) => {
     if (!open) {
+      if (unreadSocketRef.value) {
+        unreadSocketRef.value.disconnect();
+        unreadSocketRef.value = null;
+        activeSocketScope.value = "";
+      }
       return;
     }
     await loadThread();

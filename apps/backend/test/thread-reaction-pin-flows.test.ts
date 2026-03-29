@@ -135,3 +135,65 @@ test("private channel rejects non-member thread access", async () => {
     (error: unknown) => error instanceof ForbiddenException,
   );
 });
+
+test("public channel allows workspace member to create thread reply without explicit channel membership", async () => {
+  const service = buildService({
+    channel: {
+      findFirst: async () => ({
+        id: "channel-public",
+        name: "general",
+        workspaceId: "workspace-1",
+        type: "PUBLIC",
+      }),
+    },
+    channelMember: {
+      findUnique: async () => null,
+      findMany: async () => [],
+    },
+  });
+
+  const reply = await service.createReply("workspace-1", "general", "message-root", "user-1", { content: "hello" });
+  assert.equal(reply.parentMessageId, "message-root");
+});
+
+test("private channel rejects non-member reply create", async () => {
+  const service = buildService({
+    channel: {
+      findFirst: async () => ({
+        id: "channel-private",
+        name: "secret",
+        workspaceId: "workspace-1",
+        type: "PRIVATE",
+      }),
+    },
+    channelMember: {
+      findUnique: async () => null,
+      findMany: async () => [],
+    },
+  });
+
+  await assert.rejects(
+    async () => service.createReply("workspace-1", "secret", "message-root", "user-1", { content: "no access" }),
+    (error: unknown) => error instanceof ForbiddenException,
+  );
+});
+
+test("private channel allows invited member to create reply", async () => {
+  const service = buildService({
+    channel: {
+      findFirst: async () => ({
+        id: "channel-private",
+        name: "secret",
+        workspaceId: "workspace-1",
+        type: "PRIVATE",
+      }),
+    },
+    channelMember: {
+      findUnique: async () => ({ id: "cm-1", channelId: "channel-private", userId: "user-1" }),
+      findMany: async () => [],
+    },
+  });
+
+  const reply = await service.createReply("workspace-1", "secret", "message-root", "user-1", { content: "allowed" });
+  assert.equal(reply.parentMessageId, "message-root");
+});

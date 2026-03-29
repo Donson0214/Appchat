@@ -13,7 +13,13 @@
       @toggle-reaction="onToggleReaction"
       @toggle-pin="onTogglePin"
     />
-    <MessageInput :channel-name="channel.name" :is-direct-message="channel.isDirectMessage" @send="onSend" />
+    <MessageInput
+      :workspace-id="channel.workspaceId"
+      :channel-ref="channel.channelRef"
+      :channel-name="channel.name"
+      :is-direct-message="channel.isDirectMessage"
+      @send="onSend"
+    />
   </div>
 </template>
 
@@ -46,6 +52,8 @@ const emit = defineEmits<{
 
 defineProps<{
   channel: {
+    workspaceId?: string;
+    channelRef?: string;
     name: string;
     description: string;
     isDirectMessage?: boolean;

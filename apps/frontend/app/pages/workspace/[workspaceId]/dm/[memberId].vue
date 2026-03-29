@@ -119,6 +119,8 @@ const headerChannel = computed(() => ({
 }));
 
 const chatChannel = computed(() => ({
+  workspaceId: workspaceRef.value,
+  channelRef: dmChannelRef.value,
   name: recipientName.value,
   description: recipientRole.value,
   isDirectMessage: true,

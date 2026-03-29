@@ -187,6 +187,8 @@ const headerChannel = computed(() => ({
 }));
 
 const chatChannel = computed(() => ({
+  workspaceId: workspaceRef.value,
+  channelRef: channelRef.value,
   name: channelMeta.value?.name || "channel",
   description: channelMeta.value?.description || "",
   messages: messages.value,
@@ -336,6 +338,7 @@ const handleOpenThread = (message: ThreadMessage) => {
 
 const closeThreadPanel = () => {
   isThreadPanelOpen.value = false;
+  selectedThreadMessage.value = null;
 };
 
 const handleMentionClick = (mention: { userId: string | null; displayName: string; mentionKey: string }) => {
@@ -392,6 +395,9 @@ onMounted(async () => {
 });
 
 watch([workspaceRef, channelRef], async () => {
+  isThreadPanelOpen.value = false;
+  selectedThreadMessage.value = null;
+  selectedProfileHint.value = null;
   await hydrateChannel();
   ensureSocketRoom();
 });
