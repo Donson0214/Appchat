@@ -9,6 +9,9 @@
       :top-reactions="channel.topReactions"
       :messages="channel.messages"
       @open-thread="onOpenThread"
+      @mention-click="onMentionClick"
+      @toggle-reaction="onToggleReaction"
+      @toggle-pin="onTogglePin"
     />
     <MessageInput :channel-name="channel.name" :is-direct-message="channel.isDirectMessage" @send="onSend" />
   </div>
@@ -21,18 +24,24 @@ const emit = defineEmits<{
   (event: "send-message", content: string): void;
   (event: "open-thread", message: {
     id: string;
+    parentMessageId?: string | null;
     initials: string;
     color: string;
+    authorId?: string;
     name: string;
     time: string;
     pinned?: boolean;
     text: string;
+    mentions?: Array<{ userId: string | null; displayName: string; mentionKey: string; start: number; end: number }>;
     replies?: number;
     lastReply?: string;
     replyUsers?: Array<{ initials: string; color: string }>;
-    reactions?: Array<{ emoji: string; count: number }>;
+    reactions?: Array<{ emoji: string; count: number; reactedByMe?: boolean }>;
     attachment?: { name: string; size: string };
   }): void;
+  (event: "mention-click", mention: { userId: string | null; displayName: string; mentionKey: string }): void;
+  (event: "toggle-reaction", payload: { messageId: string; emoji: string }): void;
+  (event: "toggle-pin", messageId: string): void;
 }>();
 
 defineProps<{
@@ -46,16 +55,19 @@ defineProps<{
     topReactions?: Array<{ emoji: string; count: number }>;
     messages: Array<{
       id: string;
+      parentMessageId?: string | null;
       initials: string;
       color: string;
+      authorId?: string;
       name: string;
       time: string;
       pinned?: boolean;
       text: string;
+      mentions?: Array<{ userId: string | null; displayName: string; mentionKey: string; start: number; end: number }>;
       replies?: number;
       lastReply?: string;
       replyUsers?: Array<{ initials: string; color: string }>;
-      reactions?: Array<{ emoji: string; count: number }>;
+      reactions?: Array<{ emoji: string; count: number; reactedByMe?: boolean }>;
       attachment?: { name: string; size: string };
     }>;
   };
@@ -67,18 +79,33 @@ const onSend = (content: string) => {
 
 const onOpenThread = (message: {
   id: string;
+  parentMessageId?: string | null;
   initials: string;
   color: string;
+  authorId?: string;
   name: string;
   time: string;
   pinned?: boolean;
   text: string;
+  mentions?: Array<{ userId: string | null; displayName: string; mentionKey: string; start: number; end: number }>;
   replies?: number;
   lastReply?: string;
   replyUsers?: Array<{ initials: string; color: string }>;
-  reactions?: Array<{ emoji: string; count: number }>;
+  reactions?: Array<{ emoji: string; count: number; reactedByMe?: boolean }>;
   attachment?: { name: string; size: string };
 }) => {
   emit("open-thread", message);
+};
+
+const onMentionClick = (mention: { userId: string | null; displayName: string; mentionKey: string }) => {
+  emit("mention-click", mention);
+};
+
+const onToggleReaction = (payload: { messageId: string; emoji: string }) => {
+  emit("toggle-reaction", payload);
+};
+
+const onTogglePin = (messageId: string) => {
+  emit("toggle-pin", messageId);
 };
 </script>

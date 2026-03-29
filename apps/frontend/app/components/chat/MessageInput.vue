@@ -46,7 +46,13 @@
 
         <button
           type="button"
-          class="inline-flex h-11 w-11 items-center justify-center rounded-md bg-indigo-300 text-[18px] text-white transition-all duration-200 ease-in-out hover:-translate-y-px hover:brightness-105"
+          class="inline-flex h-11 w-11 items-center justify-center rounded-md text-[18px] text-white transition-all duration-200 ease-in-out"
+          :class="
+            canSend
+              ? 'bg-indigo-600 hover:-translate-y-px hover:brightness-105'
+              : 'bg-indigo-300'
+          "
+          aria-label="Send message"
           @click="submit"
         >
           <svg viewBox="0 0 20 20" class="h-5 w-5 fill-current">
@@ -77,6 +83,7 @@ const props = withDefaults(
 );
 
 const draft = ref("");
+const canSend = computed(() => draft.value.trim().length > 0);
 const placeholderText = computed(() =>
   props.isDirectMessage ? `Message ${props.channelName}` : `Message #${props.channelName}`,
 );

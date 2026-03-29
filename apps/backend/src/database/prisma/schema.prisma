@@ -19,11 +19,14 @@ model User {
   Channel       Channel[]
   ChannelMember ChannelMember[]
   Message       Message[]
+  MessageReaction MessageReaction[]
+  PinnedMessage PinnedMessage[]   @relation("PinnedByUser")
   Notification  Notification[]    @relation("UserNotifications")
   MentionsAuthored MessageMention[] @relation("MentionsAuthored")
   MentionsReceived MessageMention[] @relation("MentionsReceived")
   Workspace     Workspace[]
   workspaces    WorkspaceMember[]
+  ChannelReadState ChannelReadState[]
 }
 
 model Workspace {
@@ -37,6 +40,7 @@ model Workspace {
   Channel    Channel[]
   Notification Notification[]
   MessageMention MessageMention[]
+  PinnedMessage PinnedMessage[]
   User       User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members    WorkspaceMember[]
 
@@ -70,11 +74,28 @@ model Channel {
   Workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   ChannelMember ChannelMember[]
   Message       Message[]
+  PinnedMessage PinnedMessage[]
   Notification  Notification[]
   MessageMention MessageMention[]
+  ChannelReadState ChannelReadState[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId])
+}
+
+model ChannelReadState {
+  id         String   @id @default(uuid())
+  channelId  String
+  userId     String
+  lastReadAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId, updatedAt])
+  @@index([channelId, updatedAt])
 }
 
 model ChannelMember {
@@ -93,16 +114,53 @@ model Message {
   id        String   @id
   channelId String
   userId    String
+  parentMessageId String?
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime
   Channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ParentMessage Message? @relation("ThreadReplies", fields: [parentMessageId], references: [id], onDelete: Cascade)
+  Replies Message[] @relation("ThreadReplies")
   Notification Notification[]
   MessageMention MessageMention[]
+  MessageReaction MessageReaction[]
+  PinnedMessage PinnedMessage[]
 
   @@index([channelId, createdAt])
   @@index([userId])
+  @@index([parentMessageId, createdAt])
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PinnedMessage {
+  id         String   @id @default(uuid())
+  workspaceId String
+  channelId  String
+  messageId  String
+  pinnedById String
+  createdAt  DateTime @default(now())
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  channel    Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  message    Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinnedBy   User      @relation("PinnedByUser", fields: [pinnedById], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, messageId])
+  @@index([workspaceId, channelId, createdAt])
+  @@index([pinnedById, createdAt])
 }
 
 model Notification {

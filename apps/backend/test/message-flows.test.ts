@@ -24,19 +24,55 @@ const buildService = (overrides: Record<string, unknown> = {}) => {
     },
     message: {
       findMany: async () => [],
-      create: async () => ({
+      count: async () => 1,
+      findUnique: async () => ({
         id: "message-1",
         content: "hello @channel",
+        parentMessageId: null,
         createdAt: new Date(),
         User: {
+          id: "user-1",
           email: "author@example.com",
           fullName: "Author User",
           name: null,
         },
+        MessageMention: [],
+        MessageReaction: [],
+        PinnedMessage: [],
+        Replies: [],
+      }),
+      create: async () => ({
+        id: "message-1",
+        content: "hello @channel",
+        parentMessageId: null,
+        createdAt: new Date(),
+        User: {
+          id: "user-1",
+          email: "author@example.com",
+          fullName: "Author User",
+          name: null,
+        },
+        MessageMention: [],
+        MessageReaction: [],
+        PinnedMessage: [],
+        Replies: [],
       }),
     },
     messageMention: {
       create: async () => ({}),
+    },
+    messageReaction: {
+      findMany: async () => [],
+      upsert: async () => ({}),
+      deleteMany: async () => ({ count: 0 }),
+    },
+    pinnedMessage: {
+      upsert: async () => ({}),
+      deleteMany: async () => ({ count: 0 }),
+      findMany: async () => [],
+    },
+    channelReadState: {
+      findMany: async () => [],
     },
     $transaction: async (actions: any[]) => Promise.all(actions),
     ...overrides,
@@ -44,6 +80,7 @@ const buildService = (overrides: Record<string, unknown> = {}) => {
 
   const messageGateway = {
     emitMessageCreated: () => undefined,
+    emitUnreadCountForUser: () => undefined,
   };
 
   const notificationsService = {

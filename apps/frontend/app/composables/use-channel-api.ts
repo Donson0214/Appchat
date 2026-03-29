@@ -8,6 +8,7 @@ type ChannelDto = {
   type: "PUBLIC" | "PRIVATE";
   private: boolean;
   membersCount: number;
+  unreadCount: number;
 };
 
 type CreateChannelPayload = {
@@ -91,9 +92,30 @@ export const useChannelApi = () => {
     }
   };
 
+  const markChannelRead = async (workspaceId: string, channelRef: string) => {
+    const headers = getAuthHeaders();
+    if (!headers) {
+      throw new Error("UNAUTHENTICATED");
+    }
+
+    try {
+      return await $fetch<{ channelId: string; unreadCount: number; lastReadAt: string }>(
+        `${apiBaseUrl}/workspaces/${workspaceId}/channels/${channelRef}/read`,
+        {
+          method: "POST",
+          headers,
+        },
+      );
+    } catch (error) {
+      await handleUnauthorizedError(error);
+      throw error;
+    }
+  };
+
   return {
     fetchChannels,
     createChannel,
     inviteMember,
+    markChannelRead,
   };
 };

@@ -53,4 +53,17 @@ export class ChannelController {
     }
     return this.channelService.addMember(workspaceId, channelRef, userId, dto);
   }
+
+  @Post("workspaces/:workspaceId/channels/:channelRef/read")
+  async markRead(
+    @Param("workspaceId") workspaceId: string,
+    @Param("channelRef") channelRef: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException("Unauthorized");
+    }
+    return this.channelService.markAsRead(workspaceId, channelRef, userId);
+  }
 }

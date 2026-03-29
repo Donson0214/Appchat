@@ -6,13 +6,17 @@
         :key="item.id"
         class="relative flex h-[58px] w-[58px] items-center justify-center rounded-[14px] text-[35px] font-semibold text-white transition-all duration-200 ease-in-out hover:brightness-110"
         :class="item.bg"
+        type="button"
+        @click="selectWorkspace(item.id)"
       >
         {{ item.label }}
-        <span v-if="index === 0" class="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-indigo-500" />
+        <span v-if="item.id === workspace.id" class="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full bg-indigo-500" />
       </button>
 
       <button
         class="mt-3 flex h-[58px] w-[58px] items-center justify-center rounded-[14px] border border-dashed border-slate-600 text-[30px] leading-none text-slate-400 transition-all duration-200 ease-in-out hover:bg-slate-800"
+        type="button"
+        @click="goCreateWorkspace"
       >
         +
       </button>
@@ -75,7 +79,10 @@
 </template>
 
 <script setup lang="ts">
-const { workspaceInitial, loadWorkspace } = useWorkspace();
+const { workspace, workspaceInitial, workspaces: workspaceList, loadWorkspace, saveWorkspace } = useWorkspace();
+const { fetchChannels } = useChannelApi();
+const { setStatus } = usePresenceApi();
+const router = useRouter();
 
 const userInitial = ref("A");
 const userFullName = ref("Alex Morgan");
@@ -84,11 +91,19 @@ const isProfileMenuOpen = ref(false);
 const menuRef = ref<HTMLElement | null>(null);
 const avatarButtonRef = ref<HTMLElement | null>(null);
 
-const workspaces = computed(() => [
-  { id: "a", label: workspaceInitial.value, bg: "bg-indigo-500" },
-  { id: "s", label: "S", bg: "bg-emerald-500" },
-  { id: "o", label: "O", bg: "bg-amber-600" },
-]);
+const badgeColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-600", "bg-cyan-600", "bg-pink-600"];
+
+const workspaces = computed(() => {
+  if (!workspaceList.value.length) {
+    return [{ id: workspace.value.id, label: workspaceInitial.value, bg: badgeColors[0] }];
+  }
+
+  return workspaceList.value.map((item, index) => ({
+    id: item.id,
+    label: (item.name?.[0] || "W").toUpperCase(),
+    bg: badgeColors[index % badgeColors.length],
+  }));
+});
 
 onMounted(() => {
   loadWorkspace();
@@ -138,9 +153,40 @@ const onEscClose = (event: KeyboardEvent) => {
 };
 
 const handleSignOut = async () => {
+  try {
+    await setStatus("offline");
+  } catch {
+    // best-effort only
+  }
   localStorage.removeItem("appchat_access_token");
   localStorage.removeItem("appchat_user");
   localStorage.removeItem("appchat_workspace");
   await navigateTo("/sign-in");
+};
+
+const selectWorkspace = async (workspaceId: string) => {
+  const selected = workspaceList.value.find((item) => item.id === workspaceId);
+  if (!selected) {
+    return;
+  }
+
+  saveWorkspace(selected);
+
+  try {
+    const channels = await fetchChannels(selected.id);
+    const defaultChannel = channels.find((channel) => channel.name === "general") ?? channels[0];
+    if (defaultChannel) {
+      await router.push(`/workspace/${selected.id}/channel/${defaultChannel.id}`);
+      return;
+    }
+  } catch {
+    // ignore and use fallback route
+  }
+
+  await router.push(`/workspace/${selected.id}/channel/general`);
+};
+
+const goCreateWorkspace = async () => {
+  await router.push("/workspace/create");
 };
 </script>

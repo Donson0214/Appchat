@@ -9,6 +9,6 @@ import { MessageService } from "./message.service";
   imports: [JwtModule, NotificationsModule],
   controllers: [MessageController],
   providers: [MessageService, MessageGateway],
-  exports: [MessageService],
+  exports: [MessageService, MessageGateway],
 })
 export class MessageModule {}
